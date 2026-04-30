@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { MainContent } from '@/components/MainContent';
 import { PageHeader } from '@/components/PageHeader';
@@ -37,6 +37,14 @@ const entryTypes: EntryType[] = [
 ];
 
 export default function EntriesPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-64 text-slate-500">Carregando...</div>}>
+      <EntriesContent />
+    </Suspense>
+  );
+}
+
+function EntriesContent() {
   const { isPrivate } = usePrivacy();
   const { success: toastSuccess, error: toastError } = useToast();
   const searchParams = useSearchParams();
