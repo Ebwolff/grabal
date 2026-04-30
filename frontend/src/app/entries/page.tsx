@@ -10,9 +10,15 @@ import { useToast } from '@/components/ToastProvider';
 import {
   Save, AlertCircle, CheckCircle2, Plus, Trash2,
   Wheat, DollarSign, Receipt, Building2, CreditCard, ShieldCheck, FileCheck,
-  Calendar, Info, ChevronRight, LayoutList, History, Lock
+  Calendar, Info, ChevronRight, LayoutList, History, Lock, MapPin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  getProducers, getFarms, 
+  createProduction, createCostWithItems, createAsset, 
+  createLiability, createCPR, createGuarantee,
+  type Producer, type Farm, type Safra, type Cultura 
+} from '@/lib/supabase/database';
 
 // --- Types ---
 type EntryCategory = 'OPERACIONAL' | 'BALANCO' | 'FINANCEIRO';
@@ -59,15 +65,30 @@ function EntriesContent() {
     }
   }, [searchParams]);
 
+  const [producers, setProducers] = useState<Producer[]>([]);
+  const [farms, setFarms] = useState<Farm[]>([]);
+  const [loadingContext, setLoadingContext] = useState(true);
+
+  useEffect(() => {
+    Promise.all([getProducers(), getFarms()])
+      .then(([pData, fData]) => {
+        setProducers(pData);
+        setFarms(fData);
+      })
+      .finally(() => setLoadingContext(false));
+  }, []);
+
   // Unified Form State
   const [form, setForm] = useState({
+    producerId: '',
+    farmId: '',
+    safraId: '',
+    culturaId: '',
     description: '',
     value: '',
     date: new Date().toISOString().split('T')[0],
-    cultura: '',
     area: '',
     productivity: '',
-    safra: '2024/25',
     subType: '',
     creditor: '',
     dueDate: '',
@@ -79,14 +100,24 @@ function EntriesContent() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const availableFarms = useMemo(() => farms.filter(f => f.producerId === form.producerId), [farms, form.producerId]);
+  const activeFarm = useMemo(() => farms.find(f => f.id === form.farmId), [farms, form.farmId]);
+  const activeSafra = useMemo(() => activeFarm?.safras?.find((s: any) => s.id === form.safraId), [activeFarm, form.safraId]);
+  const availableCulturas = useMemo(() => activeSafra?.culturas || [], [activeSafra]);
+
   const activeType = useMemo(() => entryTypes.find(t => t.id === selectedType) || entryTypes[0], [selectedType]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
+    if (!form.producerId) newErrors.producerId = 'Obrigatório selecionar Produtor/Cliente';
+    if (!form.farmId) newErrors.farmId = 'Obrigatório selecionar Fazenda';
     if (!form.date) newErrors.date = 'Obrigatório';
     
+    if (['producao', 'custo', 'servico', 'despesa'].includes(selectedType)) {
+      if (!form.culturaId) newErrors.culturaId = 'Obrigatório selecionar Cultura';
+    }
+
     if (selectedType === 'producao') {
-      if (!form.cultura) newErrors.cultura = 'Obrigatório';
       if (!form.area || parseFloat(form.area) <= 0) newErrors.area = 'Inválido';
       if (!form.productivity || parseFloat(form.productivity) <= 0) newErrors.productivity = 'Inválido';
     } else {
@@ -118,50 +149,65 @@ function EntriesContent() {
       let payload: any = {};
 
       const basePayload = {
-        farmId: 'farm-1', // Mocking for now, context should provide this
-        producerId: 'prod-1',
+        farmId: form.farmId,
         date: new Date(form.date).toISOString(),
         description: form.description,
-        value: parseFloat(form.value)
+        value: parseFloat(form.value) || 0
       };
 
       switch (selectedType) {
         case 'producao':
           endpoint = 'production';
-          payload = { ...basePayload, culture: form.cultura, area: parseFloat(form.area), productivity: parseFloat(form.productivity), safra: form.safra, description: `Produção ${form.cultura} - ${form.safra}` };
+          payload = { culturaId: form.culturaId, area: parseFloat(form.area), productivity: parseFloat(form.productivity), totalProduction: parseFloat(form.area) * parseFloat(form.productivity), createdAt: basePayload.date };
           break;
         case 'despesa':
         case 'custo':
           endpoint = 'expenses';
-          payload = { ...basePayload, category: selectedType.toUpperCase() };
+          payload = { culturaId: form.culturaId, type: selectedType === 'despesa' ? 'DESPESAS_ADMINISTRATIVAS' : 'INSUMOS', createdAt: basePayload.date };
           break;
         case 'servico':
           endpoint = 'services';
-          payload = { ...basePayload, provider: 'Terceiro' };
+          payload = { culturaId: form.culturaId, type: 'SERVICOS', createdAt: basePayload.date };
           break;
         case 'ativo':
           endpoint = 'assets';
-          payload = { ...basePayload, type: form.subType || 'GERAL', acquisitionDate: basePayload.date, usefulLife: parseInt(form.vidaUtil) || 0 };
+          payload = { farmId: form.farmId, type: form.subType || 'GERAL', description: form.description, value: basePayload.value, createdAt: basePayload.date };
           break;
         case 'passivo':
           endpoint = 'liabilities';
-          payload = { ...basePayload, type: 'FINANCEIRO', dueDate: new Date(form.dueDate).toISOString() };
+          payload = { farmId: form.farmId, creditor: form.creditor, type: 'FINANCEIRO', description: form.description, value: basePayload.value, dueDate: new Date(form.dueDate).toISOString() };
           break;
         case 'cpr':
           endpoint = 'cprs';
-          payload = { ...basePayload, culture: form.cultura, volume: parseFloat(form.volume) || 0, unit: 'sc', dueDate: new Date(form.dueDate).toISOString(), buyer: form.comprador || 'Mercado' };
+          payload = { farmId: form.farmId, cultura: activeFarm?.safras?.find((s:any) => s.id === form.safraId)?.culturas?.find((c:any) => c.id === form.culturaId)?.name || 'Geral', committedVolume: parseFloat(form.volume) || 0, value: basePayload.value, dueDate: new Date(form.dueDate).toISOString() };
           break;
         case 'garantia':
           endpoint = 'guarantees';
-          payload = { ...basePayload, type: 'REAL', assetDescription: form.description, dueDate: new Date(form.dueDate).toISOString() };
+          payload = { farmId: form.farmId, description: form.description, value: basePayload.value, createdAt: basePayload.date };
+          break;
+      // Connect to Supabase based on endpoint
+      switch (selectedType) {
+        case 'producao':
+          await createProduction(payload);
+          break;
+        case 'despesa':
+        case 'custo':
+        case 'servico':
+          await createCostWithItems(payload, [{ description: form.description, value: basePayload.value }]);
+          break;
+        case 'ativo':
+          await createAsset(payload);
+          break;
+        case 'passivo':
+          await createLiability(payload);
+          break;
+        case 'cpr':
+          await createCPR(payload);
+          break;
+        case 'garantia':
+          await createGuarantee(payload);
           break;
       }
-
-      // TODO: Connect to Supabase tables based on endpoint
-      // For now, simulate success locally
-      const success = true;
-
-      if (!success) throw new Error('Falha ao salvar');
 
       setSubmitStatus('success');
       toastSuccess(`${activeType.label} registrado com sucesso!`);
@@ -176,7 +222,6 @@ function EntriesContent() {
           area: '',
           productivity: '',
           volume: '',
-          cultura: '',
           comprador: '',
           dueDate: '',
           subType: '',
@@ -260,6 +305,87 @@ function EntriesContent() {
             </div>
 
             <div className="p-6 space-y-6">
+              {/* Context Selection Row */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-5 p-4 bg-slate-950/50 rounded-xl border border-industrial-border/50">
+                <div className="flex flex-col">
+                  <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest block mb-2">Cliente / Produtor *</label>
+                  <select 
+                    value={form.producerId} 
+                    onChange={e => setForm(p => ({ ...p, producerId: e.target.value, farmId: '', safraId: '', culturaId: '' }))}
+                    className={cn(
+                      "w-full bg-slate-900 border text-sm px-4 py-3 focus:outline-none focus:border-primary transition-all text-white",
+                      errors.producerId ? "border-red-500/50 animate-pulse" : "border-industrial-border"
+                    )}
+                  >
+                    <option value="">-- Selecione --</option>
+                    {producers.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col">
+                  <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest block mb-2">Fazenda Destino *</label>
+                  <select 
+                    value={form.farmId} 
+                    onChange={e => setForm(p => ({ ...p, farmId: e.target.value, safraId: '', culturaId: '' }))}
+                    className={cn(
+                      "w-full bg-slate-900 border text-sm px-4 py-3 focus:outline-none focus:border-primary transition-all text-white",
+                      !form.producerId && "opacity-50 cursor-not-allowed",
+                      errors.farmId ? "border-red-500/50 animate-pulse" : "border-industrial-border"
+                    )}
+                    disabled={!form.producerId}
+                  >
+                    <option value="">-- Selecione --</option>
+                    {availableFarms.map(f => (
+                      <option key={f.id} value={f.id}>{f.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {['producao', 'custo', 'servico', 'despesa', 'cpr'].includes(selectedType) && (
+                  <>
+                    <div className="flex flex-col">
+                      <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest block mb-2">Safra Operacional *</label>
+                      <select 
+                        value={form.safraId} 
+                        onChange={e => setForm(p => ({ ...p, safraId: e.target.value, culturaId: '' }))}
+                        className={cn(
+                          "w-full bg-slate-900 border text-sm px-4 py-3 focus:outline-none focus:border-primary transition-all text-white",
+                          !form.farmId && "opacity-50 cursor-not-allowed",
+                          errors.culturaId ? "border-red-500/50" : "border-industrial-border"
+                        )}
+                        disabled={!form.farmId}
+                      >
+                        <option value="">-- Selecione a Safra --</option>
+                        {activeFarm?.safras?.map((s: any) => (
+                          <option key={s.id} value={s.id}>{s.year} {s.description ? `- ${s.description}` : ''}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col">
+                      <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest block mb-2">Cultura Vinculada *</label>
+                      <select 
+                        value={form.culturaId} 
+                        onChange={e => setForm(p => ({ ...p, culturaId: e.target.value }))}
+                        className={cn(
+                          "w-full bg-slate-900 border text-sm px-4 py-3 focus:outline-none focus:border-primary transition-all text-white",
+                          !form.safraId && "opacity-50 cursor-not-allowed",
+                          errors.culturaId ? "border-red-500/50 animate-pulse" : "border-industrial-border"
+                        )}
+                        disabled={!form.safraId}
+                      >
+                        <option value="">-- Selecione a Cultura --</option>
+                        {availableCulturas.map((c: any) => (
+                          <option key={c.id} value={c.id}>{c.name} ({c.plantedArea} ha)</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+              </div>
+
               {/* Common Fields Row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {selectedType !== 'producao' && (
@@ -292,9 +418,7 @@ function EntriesContent() {
                   >
                     {selectedType === 'producao' && (
                       <>
-                        <InputField label="Cultura" value={form.cultura} onChange={(v: string) => setForm(p => ({...p, cultura: v}))} placeholder="Ex: Soja, Milho..." error={errors.cultura} />
-                        <InputField label="Safra" value={form.safra} onChange={(v: string) => setForm(p => ({...p, safra: v}))} placeholder="2024/25" />
-                        <InputField label="Área (ha)" type="number" value={form.area} onChange={(v: string) => setForm(p => ({...p, area: v}))} placeholder="0.00" error={errors.area} />
+                        <InputField label="Área Colhida (ha)" type="number" value={form.area} onChange={(v: string) => setForm(p => ({...p, area: v}))} placeholder="0.00" error={errors.area} />
                         <InputField label="Produtividade (sc/ha)" type="number" value={form.productivity} onChange={(v: string) => setForm(p => ({...p, productivity: v}))} placeholder="0.00" error={errors.productivity} />
                       </>
                     )}
@@ -328,11 +452,10 @@ function EntriesContent() {
                     
                     {selectedType === 'cpr' && (
                       <>
-                         <InputField label="Cultura" value={form.cultura} onChange={(v: string) => setForm(p => ({...p, cultura: v}))} placeholder="Soja, Milho..." error={errors.cultura} />
-                         <InputField label="Volume (sc)" type="number" value={form.volume} onChange={(v: string) => setForm(p => ({...p, volume: v}))} placeholder="0.00" />
-                         <InputField label="Valor Total" type="number" value={form.value} onChange={(v: string) => setForm(p => ({...p, value: v}))} prefix="R$" error={errors.value} />
+                         <InputField label="Volume de Entrega (sc)" type="number" value={form.volume} onChange={(v: string) => setForm(p => ({...p, volume: v}))} placeholder="0.00" />
+                         <InputField label="Valor Comprometido Total" type="number" value={form.value} onChange={(v: string) => setForm(p => ({...p, value: v}))} prefix="R$" error={errors.value} />
                          <InputField label="Data de Vencimento" type="date" value={form.dueDate} onChange={(v: string) => setForm(p => ({...p, dueDate: v}))} error={errors.dueDate} />
-                         <InputField label="Comprador" value={form.comprador} onChange={(v: string) => setForm(p => ({...p, comprador: v}))} placeholder="Cargill, Bunge..." />
+                         <InputField label="Comprador / Tradind" value={form.comprador} onChange={(v: string) => setForm(p => ({...p, comprador: v}))} placeholder="Cargill, Bunge..." />
                       </>
                     )}
 
