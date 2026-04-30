@@ -185,6 +185,8 @@ function EntriesContent() {
           endpoint = 'guarantees';
           payload = { farmId: form.farmId, description: form.description, value: basePayload.value, createdAt: basePayload.date };
           break;
+      }
+
       // Connect to Supabase based on endpoint
       switch (selectedType) {
         case 'producao':
