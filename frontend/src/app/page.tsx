@@ -35,10 +35,10 @@ export default function Dashboard() {
 
       {/* Top Indicators Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <MetricCard title="Rating Consolidado" value="A+" icon={<ShieldCheck size={16} />} subtitle="Baseado na Safra 2023/24" change={12} />
-        <MetricCard title="EBITDA Projetado" value="R$ 4.2M" icon={<TrendingUp size={16} />} subtitle="Margem de 32.4%" change={5} />
-        <MetricCard title="Receita Bruta" value="R$ 12.8M" icon={<DollarSign size={16} />} subtitle="Total acumulado no período" />
-        <MetricCard title="Área em Produção" value="1.240 ha" icon={<LandPlot size={16} />} subtitle="Soja e Milho (Consolidado)" />
+        <MetricCard title="Rating Consolidado" value="-" icon={<ShieldCheck size={16} />} subtitle="Aguardando dados" />
+        <MetricCard title="EBITDA Projetado" value="R$ 0,00" icon={<TrendingUp size={16} />} subtitle="Margem de 0.0%" />
+        <MetricCard title="Receita Bruta" value="R$ 0,00" icon={<DollarSign size={16} />} subtitle="Total acumulado no período" />
+        <MetricCard title="Área em Produção" value="0 ha" icon={<LandPlot size={16} />} subtitle="Aguardando cadastro" />
       </div>
 
       {/* Secondary Section */}
@@ -59,22 +59,12 @@ export default function Dashboard() {
         {/* Risk Alerts */}
         <div className="card p-5">
           <h4 className="font-semibold text-sm mb-5 text-white border-b border-industrial-border pb-3">Avisos de Risco</h4>
-          <div className="space-y-4">
-            {[
-              { label: 'Exposição Cambial', status: 'CUIDADO', color: 'text-warning', bar: 'bg-warning', w: '45%' },
-              { label: 'Limites de Crédito', status: 'OK', color: 'text-success', bar: 'bg-success', w: '80%' },
-              { label: 'Custos de Insumos', status: 'CRÍTICO', color: 'text-danger', bar: 'bg-danger', w: '92%' },
-            ].map((risk) => (
-              <div key={risk.label}>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-xs font-medium text-slate-300">{risk.label}</span>
-                  <span className={cn("text-[9px] font-bold uppercase", risk.color)}>{risk.status}</span>
-                </div>
-                <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
-                  <motion.div initial={{ width: 0 }} animate={{ width: risk.w }} className={cn("h-full rounded-full", risk.bar)} />
-                </div>
-              </div>
-            ))}
+          
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <ShieldCheck className="w-12 h-12 text-slate-800 mb-3" />
+            <p className="text-xs text-slate-500 max-w-[200px]">
+              Sem alertas de risco. Aguardando a consolidação de dados operacionais e financeiros.
+            </p>
           </div>
 
           <button className="w-full mt-6 py-2.5 bg-primary text-white text-[11px] font-bold uppercase tracking-wider rounded-lg hover:bg-primary-light transition-colors">
