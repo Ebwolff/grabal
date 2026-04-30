@@ -1,0 +1,213 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model EconomicGroup {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  producers   Producer[]
+  users       User[]
+}
+
+model User {
+  id              String         @id @default(uuid())
+  email           String         @unique
+  password        String
+  name            String
+  role            Role           @default(PRODUTOR)
+  economicGroupId String
+  economicGroup   EconomicGroup  @relation(fields: [economicGroupId], references: [id])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+enum Role {
+  ADMIN
+  CONSULTOR
+  PRODUTOR
+  ANALISTA
+}
+
+model Producer {
+  id              String         @id @default(uuid())
+  name            String
+  cpfCnpj         String
+  email           String?
+  phone           String?
+  economicGroupId String
+  economicGroup   EconomicGroup  @relation(fields: [economicGroupId], references: [id])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  farms           Farm[]
+}
+
+model Farm {
+  id              String         @id @default(uuid())
+  producerId      String
+  producer        Producer       @relation(fields: [producerId], references: [id])
+  name            String
+  location        String?
+  totalArea       Float
+  agriculturalArea Float
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  safras          Safra[]
+  assets          Asset[]
+  liabilities     Liability[]
+  cprs            CPR[]
+  guarantees      Guarantee[]
+}
+
+model Safra {
+  id          String    @id @default(uuid())
+  farmId      String
+  farm        Farm      @relation(fields: [farmId], references: [id])
+  year        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  culturas    Cultura[]
+}
+
+model Cultura {
+  id            String   @id @default(uuid())
+  safraId       String
+  safra         Safra    @relation(fields: [safraId], references: [id])
+  name          String
+  plantedArea   Float
+  productivity  Float
+  sellingPrice  Float
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  productions   Production[]
+  costs         Cost[]
+  revenues      Revenue[]
+}
+
+model Production {
+  id            String   @id @default(uuid())
+  culturaId     String
+  cultura       Cultura  @relation(fields: [culturaId], references: [id])
+  area          Float
+  productivity  Float
+  totalProduction Float
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Cost {
+  id          String   @id @default(uuid())
+  culturaId   String
+  cultura     Cultura  @relation(fields: [culturaId], references: [id])
+  type        CostType
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items       CostItem[]
+}
+
+enum CostType {
+  INSUMOS
+  SERVICOS
+  FRETE
+  MAO_DE_OBRA
+  ARMAZENAGEM
+  MANUTENCAO
+  DESPESAS_ADMINISTRATIVAS
+  CONSULTORIAS
+}
+
+model CostItem {
+  id          String   @id @default(uuid())
+  costId      String
+  cost        Cost     @relation(fields: [costId], references: [id])
+  description String
+  value       Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Revenue {
+  id            String   @id @default(uuid())
+  culturaId     String
+  cultura       Cultura  @relation(fields: [culturaId], references: [id])
+  unitPrice     Float
+  volumeSold    Float
+  grossRevenue  Float
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Asset {
+  id          String   @id @default(uuid())
+  farmId      String
+  farm        Farm     @relation(fields: [farmId], references: [id])
+  type        String
+  description String
+  value       Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Liability {
+  id          String   @id @default(uuid())
+  farmId      String
+  farm        Farm     @relation(fields: [farmId], references: [id])
+  creditor    String
+  type        String
+  value       Float
+  dueDate     DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CPR {
+  id                  String   @id @default(uuid())
+  farmId              String
+  farm                Farm     @relation(fields: [farmId], references: [id])
+  cultura             String
+  committedVolume     Float
+  value               Float
+  dueDate             DateTime
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Guarantee {
+  id          String   @id @default(uuid())
+  farmId      String
+  farm        Farm     @relation(fields: [farmId], references: [id])
+  description String
+  value       Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AuditTrail {
+  id              String   @id @default(uuid())
+  userId          String?
+  action          String   // e.g., 'CREATE', 'UPDATE', 'DELETE'
+  model           String   // e.g., 'Production', 'Cost'
+  recordId        String
+  oldData         Json?
+  newData         Json?
+  economicGroupId String
+  createdAt       DateTime @default(now())
+}
