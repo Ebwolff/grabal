@@ -111,7 +111,6 @@ export default function CPRPage() {
             <Plus size={18} /> Nova CPR
           </Link>
         }
-        }
       />
 
 
