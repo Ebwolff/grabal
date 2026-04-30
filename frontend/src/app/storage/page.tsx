@@ -29,18 +29,7 @@ const tipoConfig = {
   terceiro: { label: 'Terceiro', color: 'text-orange-400', bg: 'bg-orange-950/40 border-orange-800', icon: Building2, pieColor: '#f59e0b' },
 };
 
-const initialData: Armazenagem[] = [
-  { id: '1', cultura: 'Soja', tipo: 'proprio', descricao: 'Silo metálico - Fazenda São João', capacidade: 50000, custo: 85000, safra: '2024/25' },
-  { id: '2', cultura: 'Soja', tipo: 'terceiro', descricao: 'Armazém geral - Cooperativa Central', capacidade: 30000, custo: 120000, safra: '2024/25' },
-  { id: '3', cultura: 'Milho', tipo: 'proprio', descricao: 'Silo graneleiro - Fazenda São João', capacidade: 25000, custo: 42000, safra: '2024/25' },
-  { id: '4', cultura: 'Milho', tipo: 'terceiro', descricao: 'Terminal portuário - Paranaguá', capacidade: 40000, custo: 195000, safra: '2024/25' },
-  { id: '5', cultura: 'Algodão', tipo: 'terceiro', descricao: 'Armazém algodoeiro - Rondonópolis', capacidade: 80000, custo: 310000, safra: '2024/25' },
-  { id: '6', cultura: 'Algodão', tipo: 'proprio', descricao: 'Galpão coberto - Fazenda Rio Doce', capacidade: 20000, custo: 38000, safra: '2024/25' },
-  { id: '7', cultura: 'Café', tipo: 'proprio', descricao: 'Tulha seca - Fazenda Boa Vista', capacidade: 5000, custo: 15000, safra: '2024/25' },
-  { id: '8', cultura: 'Café', tipo: 'terceiro', descricao: 'Armazém certificado - Exportadora', capacidade: 8000, custo: 48000, safra: '2024/25' },
-  { id: '9', cultura: 'Soja', tipo: 'proprio', descricao: 'Silo bag (emergência)', capacidade: 15000, custo: 22000, safra: '2023/24' },
-  { id: '10', cultura: 'Trigo', tipo: 'terceiro', descricao: 'Moinho parceiro - armazenagem', capacidade: 10000, custo: 35000, safra: '2024/25' },
-];
+const initialData: Armazenagem[] = [];
 
 const culturasDisponiveis = ['Soja', 'Milho', 'Algodão', 'Café', 'Trigo'];
 

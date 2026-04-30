@@ -8,15 +8,7 @@ import { cn } from '@/lib/utils';
 import { ShieldCheck, TrendingUp, DollarSign, LandPlot, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const cashFlowData = [
-  { name: 'Jan', receita: 4000000, custos: 2400000 },
-  { name: 'Fev', receita: 3000000, custos: 1398000 },
-  { name: 'Mar', receita: 2000000, custos: 2800000 },
-  { name: 'Abr', receita: 2780000, custos: 3908000 },
-  { name: 'Mai', receita: 1890000, custos: 1800000 },
-  { name: 'Jun', receita: 2390000, custos: 1800000 },
-  { name: 'Jul', receita: 3490000, custos: 2300000 },
-];
+const cashFlowData: Array<{ name: string; receita: number; custos: number }> = [];
 
 export default function Dashboard() {
   return (

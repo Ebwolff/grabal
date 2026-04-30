@@ -15,33 +15,20 @@ import {
   AreaChart, Area, CartesianGrid, PieChart, Pie, Cell as PieCell
 } from 'recharts';
 
-// Simulated consolidated data from all modules
-const productionData = [
-  { cultura: 'Soja', area: 1200, produtividade: 62, precoVenda: 135 },
-  { cultura: 'Milho', area: 600, produtividade: 180, precoVenda: 58 },
-  { cultura: 'Algodão', area: 500, produtividade: 280, precoVenda: 48 },
-  { cultura: 'Café', area: 300, produtividade: 35, precoVenda: 1200 },
-  { cultura: 'Trigo', area: 200, produtividade: 50, precoVenda: 95 },
-];
+// Data will come from Supabase
+const productionData: Array<{ cultura: string; area: number; produtividade: number; precoVenda: number }> = [];
 
 const cmvComponents = {
-  insumos: 3093180, servicos: 1543000, maoDeObra: 891480,
-  armazenagem: 910000, despesas: 575800, consultoria: 124500, frete: 485000,
+  insumos: 0, servicos: 0, maoDeObra: 0,
+  armazenagem: 0, despesas: 0, consultoria: 0, frete: 0,
 };
 const cmvTotal = Object.values(cmvComponents).reduce((s, v) => s + v, 0);
 
-const depreciation = 380000;
-const financialExpenses = 245000;
-const taxes = 520000;
+const depreciation = 0;
+const financialExpenses = 0;
+const taxes = 0;
 
-const monthlyData = [
-  { mes: 'Out', receita: 850000, custo: 620000 },
-  { mes: 'Nov', receita: 920000, custo: 640000 },
-  { mes: 'Dez', receita: 1100000, custo: 710000 },
-  { mes: 'Jan', receita: 1350000, custo: 780000 },
-  { mes: 'Fev', receita: 1580000, custo: 820000 },
-  { mes: 'Mar', receita: 1650000, custo: 850000 },
-];
+const monthlyData: Array<{ mes: string; receita: number; custo: number }> = [];
 
 const cultureColors = ['#10b981', '#06b6d4', '#f59e0b', '#a855f7', '#ef4444'];
 

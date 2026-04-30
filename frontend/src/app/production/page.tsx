@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
+import { createClient } from '@/lib/supabase/client';
 
 interface ProducaoItem {
   id: string;
@@ -25,19 +26,6 @@ interface ProducaoItem {
   produtor: string;
   status: 'colhido' | 'em_campo' | 'planejado';
 }
-
-const mockData: ProducaoItem[] = [
-  { id: '1', safra: '2024/25', cultura: 'Soja', areaPlantada: 800, produtividade: 62, producaoTotal: 49600, fazenda: 'Fazenda São João', produtor: 'João Silva', status: 'em_campo' },
-  { id: '2', safra: '2024/25', cultura: 'Milho', areaPlantada: 400, produtividade: 180, producaoTotal: 72000, fazenda: 'Fazenda São João', produtor: 'João Silva', status: 'em_campo' },
-  { id: '3', safra: '2024/25', cultura: 'Algodão', areaPlantada: 1200, produtividade: 280, producaoTotal: 336000, fazenda: 'Fazenda Rio Doce', produtor: 'Fazenda Rio Doce S/A', status: 'planejado' },
-  { id: '4', safra: '2024/25', cultura: 'Soja', areaPlantada: 2100, produtividade: 58, producaoTotal: 121800, fazenda: 'Fazenda Rio Doce', produtor: 'Fazenda Rio Doce S/A', status: 'em_campo' },
-  { id: '5', safra: '2023/24', cultura: 'Soja', areaPlantada: 750, produtividade: 65, producaoTotal: 48750, fazenda: 'Fazenda São João', produtor: 'João Silva', status: 'colhido' },
-  { id: '6', safra: '2023/24', cultura: 'Milho', areaPlantada: 350, produtividade: 175, producaoTotal: 61250, fazenda: 'Fazenda São João', produtor: 'João Silva', status: 'colhido' },
-  { id: '7', safra: '2023/24', cultura: 'Café', areaPlantada: 200, produtividade: 40, producaoTotal: 8000, fazenda: 'Fazenda Boa Vista', produtor: 'Carlos Agronegócios', status: 'colhido' },
-  { id: '8', safra: '2023/24', cultura: 'Soja', areaPlantada: 2000, produtividade: 60, producaoTotal: 120000, fazenda: 'Fazenda Rio Doce', produtor: 'Fazenda Rio Doce S/A', status: 'colhido' },
-  { id: '9', safra: '2024/25', cultura: 'Café', areaPlantada: 220, produtividade: 42, producaoTotal: 9240, fazenda: 'Fazenda Boa Vista', produtor: 'Carlos Agronegócios', status: 'em_campo' },
-  { id: '10', safra: '2024/25', cultura: 'Trigo', areaPlantada: 300, produtividade: 48, producaoTotal: 14400, fazenda: 'Fazenda Santa Maria', produtor: 'Ana Pereira', status: 'planejado' },
-];
 
 const statusConfig = {
   colhido: { label: 'Colhido', color: 'text-success', bg: 'bg-success/10 border-success/30' },
@@ -53,7 +41,7 @@ const cultureColors: Record<string, string> = {
 export default function ProductionPage() {
   const { isPrivate } = usePrivacy();
   const { safra, fazenda, cultura } = useGlobalFilter();
-  const [data, setData] = useState(mockData);
+  const [data, setData] = useState<ProducaoItem[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState({ areaPlantada: '', produtividade: '' });
 

@@ -8,12 +8,7 @@ import { cn } from '@/lib/utils';
 import { Plus, Search, Filter, MoreVertical, Edit2, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const producers = [
-  { id: 1, name: 'João Silva', doc: '123.456.789-00', city: 'Sorriso', state: 'MT', rating: 'A+', farms: 3 },
-  { id: 2, name: 'Fazenda Rio Doce S/A', doc: '00.123.456/0001-99', city: 'Rio Verde', state: 'GO', rating: 'B-', farms: 12 },
-  { id: 3, name: 'Carlos Agronegócios', doc: '321.654.987-11', city: 'Uberlândia', state: 'MG', rating: 'A', farms: 5 },
-  { id: 4, name: 'Ana Pereira', doc: '987.654.321-22', city: 'Cascavel', state: 'PR', rating: 'C', farms: 2 },
-];
+const producers: Array<{ id: number; name: string; doc: string; city: string; state: string; rating: string; farms: number }> = [];
 
 export default function ProducersPage() {
   const { isPrivate } = usePrivacy();

@@ -49,16 +49,7 @@ function riskLevel(pct: number): { label: string; color: string; icon: typeof Sh
   return { label: 'Crítico', color: '#ef4444', icon: AlertCircle };
 }
 
-const initialData: CPR[] = [
-  { id: '1', cultura: 'Soja', volumeComprometido: 40000, unidade: 'sc', valor: 5400000, vencimento: '2025-09', comprador: 'Cargill', status: 'vigente' },
-  { id: '2', cultura: 'Soja', volumeComprometido: 15000, unidade: 'sc', valor: 2025000, vencimento: '2025-06', comprador: 'Bunge', status: 'proximo' },
-  { id: '3', cultura: 'Milho', volumeComprometido: 60000, unidade: 'sc', valor: 3480000, vencimento: '2025-08', comprador: 'ADM', status: 'vigente' },
-  { id: '4', cultura: 'Milho', volumeComprometido: 20000, unidade: 'sc', valor: 1160000, vencimento: '2025-04', comprador: 'Dreyfus', status: 'proximo' },
-  { id: '5', cultura: 'Algodão', volumeComprometido: 4000, unidade: 'fardos', valor: 4800000, vencimento: '2026-01', comprador: 'Olam Agri', status: 'vigente' },
-  { id: '6', cultura: 'Café', volumeComprometido: 3500, unidade: 'sc', valor: 4200000, vencimento: '2025-11', comprador: 'Nestlé', status: 'vigente' },
-  { id: '7', cultura: 'Trigo', volumeComprometido: 5000, unidade: 'sc', valor: 475000, vencimento: '2025-03', comprador: 'Bunge', status: 'vencida' },
-  { id: '8', cultura: 'Soja', volumeComprometido: 10000, unidade: 'sc', valor: 1350000, vencimento: '2024-12', comprador: 'Amaggi', status: 'liquidada' },
-];
+const initialData: CPR[] = [];
 
 function gerarId() { return Math.random().toString(36).substring(2, 9); }
 
