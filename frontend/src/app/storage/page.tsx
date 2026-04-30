@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 interface Armazenagem {
   id: string;
