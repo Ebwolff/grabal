@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  BarChart, Bar, XAxis, YAxis
+  BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip
 } from 'recharts';
 import Link from 'next/link';
 
