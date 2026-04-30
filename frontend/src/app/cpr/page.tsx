@@ -33,7 +33,7 @@ const culturas = ['Soja', 'Milho', 'Algodão', 'Café', 'Trigo'];
 const cultureColors: Record<string, string> = { Soja: '#10b981', Milho: '#06b6d4', Algodão: '#f59e0b', Café: '#a855f7', Trigo: '#ef4444' };
 
 // Production data for risk calc
-const producaoTotal: Record<string, number> = { Soja: 74400, Milho: 108000, Algodão: 140000, Café: 10500, Trigo: 10000 };
+const producaoTotal: Record<string, number> = {};
 
 const statusCfg = {
   vigente: { label: 'Vigente', cls: 'bg-emerald-950/40 border-emerald-800 text-emerald-400' },

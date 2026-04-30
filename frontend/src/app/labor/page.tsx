@@ -50,36 +50,9 @@ export default function LaborPage() {
   const [showForm, setShowForm] = useState(false);
 
   React.useEffect(() => {
-    const fetchLabor = async () => {
-      try {
-        const response = await fetch('http://localhost:3001/data/costs');
-        if (!response.ok) throw new Error('Failed to fetch');
-        const json = await response.json();
-        const laborCosts = json
-          .filter((c: any) => c.type === 'MAO_DE_OBRA')
-          .flatMap((c: any) => c.items.map((item: any) => {
-            let parsed;
-            try { parsed = JSON.parse(item.description); } catch { parsed = {}; }
-            
-            return {
-              id: item.id,
-              nome: parsed.nome || item.description || 'Desconhecido',
-              tipoFuncionario: parsed.tipoFuncionario || 'Geral',
-              setor: parsed.setor || 'Campo',
-              salario: parsed.salario || (item.value * 0.6),
-              encargos: parsed.encargos || (item.value * 0.4),
-              custoTotal: item.value,
-            };
-          }));
-        setData(laborCosts);
-      } catch (err) {
-        toastError('Erro ao carregar Mão de Obra da API');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchLabor();
-  }, [toastError]);
+    // TODO: Connect to Supabase when Cost table with MAO_DE_OBRA type is populated
+    setLoading(false);
+  }, []);
   const [formStatus, setFormStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState({ salario: '', encargos: '' });
@@ -139,28 +112,7 @@ export default function LaborPage() {
     const custoTotal = sal + enc;
     
     // We mock the culturaId just to save it to DB (should be from user selection in real life)
-    try {
-      const response = await fetch('http://localhost:3001/data/costs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer test-token' },
-        body: JSON.stringify({
-          culturaId: 'some-cultura-id', // Assuming backend will ignore or need it
-          type: 'MAO_DE_OBRA',
-          items: [{
-            description: JSON.stringify({
-              nome: form.nome,
-              tipoFuncionario: form.tipoFuncionario,
-              setor: form.setor,
-              salario: sal,
-              encargos: enc
-            }),
-            value: custoTotal
-          }]
-        })
-      });
-      // the error will be ignored for now as we don't have proper auth integration yet,
-      // so we just optimistic update
-    } catch(e) {}
+    // TODO: Connect to Supabase
 
     const newItem: Funcionario = {
       id: gerarId(), tipoFuncionario: form.tipoFuncionario, nome: form.nome,

@@ -56,40 +56,9 @@ export default function LiabilitiesPage() {
   const [formStatus, setFormStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   React.useEffect(() => {
-    const fetchLiabilities = async () => {
-      try {
-        const response = await fetch('http://localhost:3001/data/liabilities');
-        if (!response.ok) throw new Error('Failed to fetch');
-        const json = await response.json();
-        
-        const now = new Date();
-        const nextMonth = new Date();
-        nextMonth.setMonth(now.getMonth() + 1);
-
-        const liabilities = json.map((item: any) => {
-          const due = new Date(item.dueDate);
-          let status: Passivo['status'] = 'a_vencer';
-          if (due < now) status = 'vencido';
-          else if (due <= nextMonth) status = 'proximo';
-
-          return {
-            id: item.id,
-            credor: item.creditor,
-            tipo: item.type,
-            valor: item.value,
-            vencimento: due.toISOString().slice(0, 7), // YYYY-MM
-            status,
-          };
-        });
-        setData(liabilities);
-      } catch (err) {
-        toastError('Erro ao carregar passivos da API');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchLiabilities();
-  }, [toastError]);
+    // TODO: Connect to Supabase Liability table
+    setLoading(false);
+  }, []);
 
   const [form, setForm] = useState({ credor: '', tipo: '', valor: '', vencimento: '' });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -133,19 +102,7 @@ export default function LiabilitiesPage() {
     // Simulate current month if day is missing, API expects ISO date
     const dDate = new Date(`${form.vencimento}-01T12:00:00Z`);
 
-    try {
-      await fetch('http://localhost:3001/data/liabilities', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer test-token' },
-        body: JSON.stringify({
-          farmId: 'some-farm-id',
-          creditor: form.credor,
-          type: form.tipo,
-          value: parseFloat(form.valor),
-          dueDate: dDate.toISOString()
-        })
-      });
-    } catch(e) {}
+    // TODO: Connect to Supabase
 
     const newItem: Passivo = {
       id: gerarId(), credor: form.credor, tipo: form.tipo,

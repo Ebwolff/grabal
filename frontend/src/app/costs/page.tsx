@@ -33,18 +33,7 @@ const tipoConfig = {
 
 const pieColors = { fertilizante: '#10b981', defensivo: '#F59E0B', semente: '#3B82F6' };
 
-const initialData: Insumo[] = [
-  { id: '1', cultura: 'Soja', produto: 'MAP (Monoamônio Fosfato)', tipo: 'fertilizante', quantidade: 200, precoUnitario: 3200, custoTotal: 640000 },
-  { id: '2', cultura: 'Soja', produto: 'KCl (Cloreto de Potássio)', tipo: 'fertilizante', quantidade: 180, precoUnitario: 2800, custoTotal: 504000 },
-  { id: '3', cultura: 'Soja', produto: 'Glifosato', tipo: 'defensivo', quantidade: 120, precoUnitario: 42, custoTotal: 5040 },
-  { id: '4', cultura: 'Soja', produto: 'Intacta RR2 PRO', tipo: 'semente', quantidade: 800, precoUnitario: 520, custoTotal: 416000 },
-  { id: '5', cultura: 'Milho', produto: 'Ureia', tipo: 'fertilizante', quantidade: 150, precoUnitario: 2400, custoTotal: 360000 },
-  { id: '6', cultura: 'Milho', produto: 'Atrazina', tipo: 'defensivo', quantidade: 80, precoUnitario: 38, custoTotal: 3040 },
-  { id: '7', cultura: 'Milho', produto: 'DKB 390 PRO3', tipo: 'semente', quantidade: 400, precoUnitario: 680, custoTotal: 272000 },
-  { id: '8', cultura: 'Algodão', produto: 'NPK 20-10-10', tipo: 'fertilizante', quantidade: 300, precoUnitario: 2900, custoTotal: 870000 },
-  { id: '9', cultura: 'Algodão', produto: 'Mancozeb', tipo: 'defensivo', quantidade: 60, precoUnitario: 85, custoTotal: 5100 },
-  { id: '10', cultura: 'Café', produto: 'Calcário Dolomítico', tipo: 'fertilizante', quantidade: 100, precoUnitario: 180, custoTotal: 18000 },
-];
+const initialData: Insumo[] = [];
 
 const culturasDisponiveis = ['Soja', 'Milho', 'Algodão', 'Café', 'Trigo'];
 const tiposDisponiveis: Array<{ value: Insumo['tipo']; label: string }> = [

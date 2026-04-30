@@ -30,16 +30,7 @@ interface DREData {
   impostos: number;
 }
 
-const dreRawData: DREData[] = [
-  { safra: '2024/25', fazenda: 'Fazenda São José', cultura: 'Soja', receitaBruta: 10044000, deducoes: 502200, cmv: 3095752, custosOperacionais: 620000, despesasAdmin: 185000, depreciacaoAmort: 95000, despesasFinanceiras: 78000, impostos: 165000 },
-  { safra: '2024/25', fazenda: 'Fazenda São José', cultura: 'Milho', receitaBruta: 6264000, deducoes: 313200, cmv: 1393992, custosOperacionais: 310000, despesasAdmin: 92500, depreciacaoAmort: 47500, despesasFinanceiras: 39000, impostos: 82500 },
-  { safra: '2024/25', fazenda: 'Fazenda Boa Vista', cultura: 'Algodão', receitaBruta: 6720000, deducoes: 336000, cmv: 2186992, custosOperacionais: 480000, despesasAdmin: 138750, depreciacaoAmort: 71250, despesasFinanceiras: 58500, impostos: 123750 },
-  { safra: '2024/25', fazenda: 'Fazenda Boa Vista', cultura: 'Café', receitaBruta: 12600000, deducoes: 630000, cmv: 487337, custosOperacionais: 155000, despesasAdmin: 46250, depreciacaoAmort: 23750, despesasFinanceiras: 19500, impostos: 41250 },
-  { safra: '2024/25', fazenda: 'Fazenda Santa Clara', cultura: 'Trigo', receitaBruta: 950000, deducoes: 47500, cmv: 458887, custosOperacionais: 93000, despesasAdmin: 27750, depreciacaoAmort: 14250, despesasFinanceiras: 11700, impostos: 24750 },
-  { safra: '2023/24', fazenda: 'Fazenda São José', cultura: 'Soja', receitaBruta: 8850000, deducoes: 442500, cmv: 2850000, custosOperacionais: 590000, despesasAdmin: 170000, depreciacaoAmort: 90000, despesasFinanceiras: 72000, impostos: 155000 },
-  { safra: '2023/24', fazenda: 'Fazenda São José', cultura: 'Milho', receitaBruta: 5400000, deducoes: 270000, cmv: 1250000, custosOperacionais: 280000, despesasAdmin: 85000, depreciacaoAmort: 42000, despesasFinanceiras: 35000, impostos: 75000 },
-  { safra: '2023/24', fazenda: 'Fazenda Boa Vista', cultura: 'Algodão', receitaBruta: 5800000, deducoes: 290000, cmv: 1980000, custosOperacionais: 420000, despesasAdmin: 125000, depreciacaoAmort: 65000, despesasFinanceiras: 52000, impostos: 110000 },
-];
+const dreRawData: DREData[] = [];
 
 const safras = [...new Set(dreRawData.map(d => d.safra))];
 const fazendas = [...new Set(dreRawData.map(d => d.fazenda))];

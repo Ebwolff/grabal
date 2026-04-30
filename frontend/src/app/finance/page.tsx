@@ -14,43 +14,11 @@ import {
 import { motion } from 'framer-motion';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
-const dreData = [
-  { label: 'Receita Bruta', value: 12800000, pct: 100 },
-  { label: '(-) Deduções', value: -640000, pct: -5 },
-  { label: 'Receita Líquida', value: 12160000, pct: 95 },
-  { label: '(-) CMV', value: -5472000, pct: -42.8 },
-  { label: 'Lucro Bruto', value: 6688000, pct: 52.2 },
-  { label: '(-) Despesas Operacionais', value: -2432000, pct: -19 },
-  { label: 'EBITDA', value: 4256000, pct: 33.2 },
-  { label: '(-) Depreciação', value: -768000, pct: -6 },
-  { label: 'EBIT', value: 3488000, pct: 27.2 },
-  { label: '(-) Resultado Financeiro', value: -1024000, pct: -8 },
-  { label: 'Lucro Líquido', value: 2464000, pct: 19.2 },
-];
+const dreData: Array<{ label: string; value: number; pct: number }> = [];
 
-const monthlyRevenue = [
-  { month: 'Jan', receita: 800, custo: 450 },
-  { month: 'Fev', receita: 920, custo: 480 },
-  { month: 'Mar', receita: 1100, custo: 520 },
-  { month: 'Abr', receita: 1400, custo: 600 },
-  { month: 'Mai', receita: 1600, custo: 650 },
-  { month: 'Jun', receita: 1200, custo: 580 },
-  { month: 'Jul', receita: 980, custo: 510 },
-  { month: 'Ago', receita: 1050, custo: 530 },
-  { month: 'Set', receita: 1300, custo: 570 },
-  { month: 'Out', receita: 1100, custo: 540 },
-  { month: 'Nov', receita: 850, custo: 490 },
-  { month: 'Dez', receita: 500, custo: 420 },
-];
+const monthlyRevenue: Array<{ month: string; receita: number; custo: number }> = [];
 
-const costBreakdown = [
-  { name: 'Insumos', value: 35, color: '#3B82F6' },
-  { name: 'Mão de Obra', value: 18, color: '#06b6d4' },
-  { name: 'Frete', value: 12, color: '#F59E0B' },
-  { name: 'Armazenagem', value: 10, color: '#8b5cf6' },
-  { name: 'Manutenção', value: 8, color: '#EF4444' },
-  { name: 'Outros', value: 17, color: '#64748b' },
-];
+const costBreakdown: Array<{ name: string; value: number; color: string }> = [];
 
 const fmt = (v: number) => `R$ ${(v / 1000000).toFixed(1)}M`;
 
@@ -73,12 +41,12 @@ export default function FinancePage() {
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-        <MetricCard title="Margem EBITDA" value="33.2%" change={5.1} icon={Activity} accentColor="#3B82F6" changeLabel="vs safra anterior" />
-        <MetricCard title="Liquidez Corrente" value="1.84" change={6.5} icon={RefreshCw} accentColor="#10B981" changeLabel="vs safra anterior" />
-        <MetricCard title="Endividamento" value="42.6%" change={-3.2} icon={TrendingDown} accentColor="#10B981" changeLabel="melhoria" />
-        <MetricCard title="ROE" value="18.7%" change={-1.4} invertChange icon={Percent} accentColor="#EF4444" changeLabel="vs safra anterior" />
-        <MetricCard title="Margem Líquida" value="19.2%" change={2.3} icon={TrendingUp} accentColor="#3B82F6" changeLabel="vs safra anterior" />
-        <MetricCard title="Giro do Ativo" value="0.92" change={5.4} icon={BarChart3} accentColor="#10B981" changeLabel="vs safra anterior" />
+        <MetricCard title="Margem EBITDA" value="0%" change={0} icon={Activity} accentColor="#3B82F6" changeLabel="vs safra anterior" />
+        <MetricCard title="Liquidez Corrente" value="0" change={0} icon={RefreshCw} accentColor="#10B981" changeLabel="vs safra anterior" />
+        <MetricCard title="Endividamento" value="0%" change={0} icon={TrendingDown} accentColor="#10B981" changeLabel="" />
+        <MetricCard title="ROE" value="0%" change={0} invertChange icon={Percent} accentColor="#EF4444" changeLabel="vs safra anterior" />
+        <MetricCard title="Margem Líquida" value="0%" change={0} icon={TrendingUp} accentColor="#3B82F6" changeLabel="vs safra anterior" />
+        <MetricCard title="Giro do Ativo" value="0" change={0} icon={BarChart3} accentColor="#10B981" changeLabel="vs safra anterior" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">

@@ -16,35 +16,19 @@ import {
 } from 'recharts';
 
 // Aggregated data from all farms and cultures
-const fazendas = [
-  { nome: 'São José', area: 1200, culturas: ['Soja', 'Milho'] },
-  { nome: 'Boa Vista', area: 800, culturas: ['Soja', 'Algodão', 'Café'] },
-  { nome: 'Santa Clara', area: 200, culturas: ['Milho', 'Trigo'] },
-];
+const fazendas: Array<{ nome: string; area: number; culturas: string[] }> = [];
 
-const culturasData = [
-  { cultura: 'Soja', area: 620, produtividade: 60, producao: 37200, precoVenda: 135, receitaBruta: 5022000, custos: 1280000, fazenda: 'São José' },
-  { cultura: 'Milho', area: 380, produtividade: 180, producao: 68400, precoVenda: 58, receitaBruta: 3967200, custos: 890000, fazenda: 'São José' },
-  { cultura: 'Soja', area: 500, produtividade: 62, producao: 31000, precoVenda: 135, receitaBruta: 4185000, custos: 1050000, fazenda: 'Boa Vista' },
-  { cultura: 'Algodão', area: 200, produtividade: 280, producao: 56000, precoVenda: 214, receitaBruta: 11984000, custos: 2200000, fazenda: 'Boa Vista' },
-  { cultura: 'Café', area: 100, produtividade: 35, producao: 3500, precoVenda: 1200, receitaBruta: 4200000, custos: 980000, fazenda: 'Boa Vista' },
-  { cultura: 'Milho', area: 120, produtividade: 165, producao: 19800, precoVenda: 58, receitaBruta: 1148400, custos: 320000, fazenda: 'Santa Clara' },
-  { cultura: 'Trigo', area: 80, produtividade: 50, producao: 4000, precoVenda: 95, receitaBruta: 380000, custos: 160000, fazenda: 'Santa Clara' },
-];
+const culturasData: Array<{ cultura: string; area: number; produtividade: number; producao: number; precoVenda: number; receitaBruta: number; custos: number; fazenda: string }> = [];
 
 const custosOperacionais = {
-  insumos: 3480000, servicos: 1658000, maoDeObra: 1420000,
-  armazenagem: 580000, despesas: 490250, consultoria: 206700,
+  insumos: 0, servicos: 0, maoDeObra: 0,
+  armazenagem: 0, despesas: 0, consultoria: 0,
 };
 
 const cultureColors: Record<string, string> = { Soja: '#10b981', Milho: '#06b6d4', Algodão: '#f59e0b', Café: '#a855f7', Trigo: '#ef4444' };
 
-const safras = ['2022/23', '2023/24', '2024/25'];
-const historicoSafras = [
-  { safra: '2022/23', receita: 24500000, custos: 7200000, lucro: 17300000 },
-  { safra: '2023/24', receita: 28100000, custos: 7600000, lucro: 20500000 },
-  { safra: '2024/25', receita: 30886600, custos: 8880000, lucro: 22006600 },
-];
+const safras: string[] = [];
+const historicoSafras: Array<{ safra: string; receita: number; custos: number; lucro: number }> = [];
 
 export default function ConsolidatedPage() {
   const { isPrivate } = usePrivacy();

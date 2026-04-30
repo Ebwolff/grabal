@@ -15,33 +15,12 @@ import {
   PieChart, Pie, Cell as PieCell
 } from 'recharts';
 
-// Simulated aggregated data from all cost modules
-const costCategories = [
-  { key: 'insumos', label: 'Insumos', icon: Package, color: '#10b981', value: 3093180 },
-  { key: 'servicos', label: 'Serviços', icon: Tractor, color: '#06b6d4', value: 1543000 },
-  { key: 'maoDeObra', label: 'Mão de Obra', icon: HardHat, color: '#f59e0b', value: 891480 },
-  { key: 'armazenagem', label: 'Armazenagem', icon: Warehouse, color: '#a855f7', value: 910000 },
-  { key: 'despesas', label: 'Despesas Admin.', icon: FileSpreadsheet, color: '#ef4444', value: 575800 },
-  { key: 'consultoria', label: 'Consultoria', icon: GraduationCap, color: '#8b5cf6', value: 124500 },
-  { key: 'frete', label: 'Frete/Logística', icon: Truck, color: '#f97316', value: 485000 },
-];
+// TODO: Populate from Supabase
+const costCategories: Array<{ key: string; label: string; icon: typeof Package; color: string; value: number }> = [];
 
-const culturaCMV = [
-  { cultura: 'Soja', insumos: 1565040, servicos: 473000, maoDeObra: 356592, armazenagem: 227000, despesas: 230320, consultoria: 49800, frete: 194000 },
-  { cultura: 'Milho', insumos: 618636, servicos: 123000, maoDeObra: 178296, armazenagem: 237000, despesas: 115160, consultoria: 24900, frete: 97000 },
-  { cultura: 'Algodão', insumos: 618636, servicos: 805000, maoDeObra: 178296, armazenagem: 348000, despesas: 115160, consultoria: 24900, frete: 97000 },
-  { cultura: 'Café', insumos: 154659, servicos: 62000, maoDeObra: 89148, armazenagem: 63000, despesas: 57580, consultoria: 12450, frete: 48500 },
-  { cultura: 'Trigo', insumos: 136209, servicos: 80000, maoDeObra: 89148, armazenagem: 35000, despesas: 57580, consultoria: 12450, frete: 48500 },
-];
+const culturaCMV: Array<{ cultura: string; insumos: number; servicos: number; maoDeObra: number; armazenagem: number; despesas: number; consultoria: number; frete: number }> = [];
 
-const dreIntegration = [
-  { label: 'Receita Bruta', value: 12500000, indent: 0 },
-  { label: '(-) Deduções', value: -625000, indent: 0 },
-  { label: 'Receita Líquida', value: 11875000, indent: 0, highlight: true },
-  { label: '(-) CMV', value: -7622960, indent: 0, accent: true },
-  { label: 'Lucro Bruto', value: 4252040, indent: 0, highlight: true },
-  { label: 'Margem Bruta', value: 33.9, indent: 0, pct: true },
-];
+const dreIntegration: Array<{ label: string; value: number; indent: number; highlight?: boolean; accent?: boolean; pct?: boolean }> = [];
 
 const cultureColors = ['#10b981', '#06b6d4', '#f59e0b', '#a855f7', '#ef4444'];
 

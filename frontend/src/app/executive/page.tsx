@@ -18,44 +18,14 @@ import {
   PieChart, Pie
 } from 'recharts';
 
-// Simulated monthly data
-const monthlyData = [
-  { name: 'Jul', receita: 1800000, custos: 850000, lucro: 950000 },
-  { name: 'Ago', receita: 2100000, custos: 920000, lucro: 1180000 },
-  { name: 'Set', receita: 2400000, custos: 980000, lucro: 1420000 },
-  { name: 'Out', receita: 2200000, custos: 1050000, lucro: 1150000 },
-  { name: 'Nov', receita: 2650000, custos: 1100000, lucro: 1550000 },
-  { name: 'Dez', receita: 2800000, custos: 1150000, lucro: 1650000 },
-  { name: 'Jan', receita: 2950000, custos: 1200000, lucro: 1750000 },
-  { name: 'Fev', receita: 3100000, custos: 1190000, lucro: 1910000 },
-  { name: 'Mar', receita: 3350000, custos: 1250000, lucro: 2100000 },
-  { name: 'Abr', receita: 3600000, custos: 1280000, lucro: 2320000 },
-  { name: 'Mai', receita: 3800000, custos: 1300000, lucro: 2500000 },
-  { name: 'Jun', receita: 4100000, custos: 1350000, lucro: 2750000 },
-];
+// TODO: Populate from Supabase
+const monthlyData: Array<{ name: string; receita: number; custos: number; lucro: number }> = [];
 
-const producaoCultura = [
-  { name: 'Soja', sacas: 72100, color: '#10b981' },
-  { name: 'Milho', sacas: 97300, color: '#3B82F6' },
-  { name: 'Algodão', sacas: 29300, color: '#F59E0B' },
-  { name: 'Café', sacas: 14000, color: '#a855f7' },
-  { name: 'Trigo', sacas: 12500, color: '#EF4444' },
-];
+const producaoCultura: Array<{ name: string; sacas: number; color: string }> = [];
 
-const custosCat = [
-  { name: 'Insumos', value: 3480000, color: '#EF4444' },
-  { name: 'Serviços', value: 1658000, color: '#F97316' },
-  { name: 'Mão de Obra', value: 1420000, color: '#3B82F6' },
-  { name: 'Armazenagem', value: 580000, color: '#a855f7' },
-  { name: 'Despesas Adm.', value: 490250, color: '#64748b' },
-  { name: 'Consultoria', value: 206700, color: '#10b981' },
-];
+const custosCat: Array<{ name: string; value: number; color: string }> = [];
 
-const endividamento = [
-  { label: 'Ativos', value: 80920000, color: '#3B82F6' },
-  { label: 'Passivos', value: 12710000, color: '#EF4444' },
-  { label: 'Financeiro', value: 4500000, color: '#10b981' },
-];
+const endividamento: Array<{ label: string; value: number; color: string }> = [];
 
 function CustomTooltipDonut({ active, payload }: any) {
   if (!active || !payload?.length) return null;
@@ -86,12 +56,12 @@ export default function ExecutiveDashboard() {
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-        <MetricCard title="Receita Total" value="R$ 30,8M" change={12.4} icon={TrendingUp} accentColor="#3B82F6" />
-        <MetricCard title="Custos Totais" value="R$ 14,7M" change={-3.2} invertChange icon={TrendingDown} accentColor="#EF4444" />
-        <MetricCard title="Lucro Operacional" value="R$ 16,1M" change={18.7} icon={DollarSign} accentColor="#10B981" />
-        <MetricCard title="EBITDA" value="R$ 24,9M" change={15.3} icon={Activity} accentColor="#3B82F6" />
-        <MetricCard title="Produção" value="219,9K" change={11.8} icon={Wheat} accentColor="#F59E0B" changeLabel="sacas total" />
-        <MetricCard title="Endividamento" value="15,7%" change={-2.1} icon={BarChart3} accentColor="#10B981" changeLabel="vs safra anterior" />
+        <MetricCard title="Receita Total" value="R$ 0" change={0} icon={TrendingUp} accentColor="#3B82F6" />
+        <MetricCard title="Custos Totais" value="R$ 0" change={0} invertChange icon={TrendingDown} accentColor="#EF4444" />
+        <MetricCard title="Lucro Operacional" value="R$ 0" change={0} icon={DollarSign} accentColor="#10B981" />
+        <MetricCard title="EBITDA" value="R$ 0" change={0} icon={Activity} accentColor="#3B82F6" />
+        <MetricCard title="Produção" value="0" change={0} icon={Wheat} accentColor="#F59E0B" changeLabel="sacas total" />
+        <MetricCard title="Endividamento" value="0%" change={0} icon={BarChart3} accentColor="#10B981" changeLabel="vs safra anterior" />
       </div>
 
       {/* Charts: Main + Production */}

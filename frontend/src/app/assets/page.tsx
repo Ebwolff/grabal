@@ -39,20 +39,7 @@ const tipoColorMap: Record<string, string> = {};
 const tipoIconMap: Record<string, typeof MapPin> = {};
 tiposAtivo.forEach(t => { tipoColorMap[t.value] = t.color; tipoIconMap[t.value] = t.icon; });
 
-const initialData: Ativo[] = [
-  { id: '1', tipo: 'Terra', descricao: 'Fazenda São José — 1.200 ha (cerrado)', valor: 36000000, aquisicao: '2015', vidaUtil: 0, depreciacaoAnual: 0 },
-  { id: '2', tipo: 'Terra', descricao: 'Fazenda Boa Vista — 800 ha (terra roxa)', valor: 32000000, aquisicao: '2018', vidaUtil: 0, depreciacaoAnual: 0 },
-  { id: '3', tipo: 'Terra', descricao: 'Fazenda Santa Clara — 200 ha (mista)', valor: 5000000, aquisicao: '2021', vidaUtil: 0, depreciacaoAnual: 0 },
-  { id: '4', tipo: 'Máquinas', descricao: 'Colheitadeira John Deere S790', valor: 1850000, aquisicao: '2022', vidaUtil: 10, depreciacaoAnual: 185000 },
-  { id: '5', tipo: 'Máquinas', descricao: 'Trator Case IH Magnum 340', valor: 980000, aquisicao: '2023', vidaUtil: 10, depreciacaoAnual: 98000 },
-  { id: '6', tipo: 'Máquinas', descricao: 'Pulverizador Jacto Uniport 4530', valor: 1200000, aquisicao: '2023', vidaUtil: 8, depreciacaoAnual: 150000 },
-  { id: '7', tipo: 'Equipamentos', descricao: 'Grade aradora e niveladora', valor: 280000, aquisicao: '2021', vidaUtil: 8, depreciacaoAnual: 35000 },
-  { id: '8', tipo: 'Equipamentos', descricao: 'Plantadeira Baldan 15 linhas', valor: 420000, aquisicao: '2022', vidaUtil: 10, depreciacaoAnual: 42000 },
-  { id: '9', tipo: 'Irrigação', descricao: 'Pivô central — 120 ha', valor: 950000, aquisicao: '2020', vidaUtil: 15, depreciacaoAnual: 63333 },
-  { id: '10', tipo: 'Benfeitorias', descricao: 'Barracão de máquinas e oficina', valor: 850000, aquisicao: '2019', vidaUtil: 25, depreciacaoAnual: 34000 },
-  { id: '11', tipo: 'Armazéns', descricao: 'Silo metálico — 50.000 sc', valor: 1200000, aquisicao: '2020', vidaUtil: 20, depreciacaoAnual: 60000 },
-  { id: '12', tipo: 'Tecnologia', descricao: 'Estação meteorológica + drones NDVI', valor: 185000, aquisicao: '2024', vidaUtil: 5, depreciacaoAnual: 37000 },
-];
+const initialData: Ativo[] = [];
 
 function gerarId() { return Math.random().toString(36).substring(2, 9); }
 

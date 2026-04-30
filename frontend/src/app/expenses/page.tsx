@@ -39,20 +39,7 @@ const tipoColorMap: Record<string, string> = {};
 const tipoIconMap: Record<string, typeof Zap> = {};
 tiposDespesa.forEach(t => { tipoColorMap[t.value] = t.color; tipoIconMap[t.value] = t.icon; });
 
-const initialData: Despesa[] = [
-  { id: '1', tipo: 'Energia', descricao: 'Energia elétrica — sede e irrigação', valor: 28500, recorrente: true, mes: 'Mar/25' },
-  { id: '2', tipo: 'Combustível', descricao: 'Diesel — frota agrícola e transporte', valor: 45200, recorrente: true, mes: 'Mar/25' },
-  { id: '3', tipo: 'Impostos', descricao: 'ITR — Imposto Territorial Rural', valor: 32000, recorrente: false, mes: 'Mar/25' },
-  { id: '4', tipo: 'Impostos', descricao: 'Funrural (2.3% s/ receita bruta)', valor: 103500, recorrente: true, mes: 'Mar/25' },
-  { id: '5', tipo: 'Aluguel', descricao: 'Arrendamento de área (400ha)', valor: 180000, recorrente: true, mes: 'Mar/25' },
-  { id: '6', tipo: 'Telecomunicações', descricao: 'Internet + telefonia rural', valor: 3800, recorrente: true, mes: 'Mar/25' },
-  { id: '7', tipo: 'Frete/Logística', descricao: 'Frete para porto — Soja safra 24/25', valor: 95000, recorrente: false, mes: 'Mar/25' },
-  { id: '8', tipo: 'Seguros', descricao: 'Seguro agrícola — Soja e Milho', valor: 42000, recorrente: false, mes: 'Mar/25' },
-  { id: '9', tipo: 'Seguros', descricao: 'Seguro de máquinas e equipamentos', valor: 18500, recorrente: true, mes: 'Mar/25' },
-  { id: '10', tipo: 'Consultoria', descricao: 'Assessoria contábil e tributária', valor: 8500, recorrente: true, mes: 'Mar/25' },
-  { id: '11', tipo: 'Energia', descricao: 'Energia — estação de bombeamento', valor: 12000, recorrente: true, mes: 'Mar/25' },
-  { id: '12', tipo: 'Combustível', descricao: 'Gasolina — veículos administrativos', valor: 6800, recorrente: true, mes: 'Mar/25' },
-];
+const initialData: Despesa[] = [];
 
 function gerarId() { return Math.random().toString(36).substring(2, 9); }
 

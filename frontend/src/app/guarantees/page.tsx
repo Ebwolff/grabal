@@ -43,7 +43,7 @@ const statusCfg = {
 const initialData: Garantia[] = [];
 
 // Rating calculation based on guarantees vs liabilities
-const passivoTotal = 12710000; // From liabilities module
+const passivoTotal = 0; // TODO: Calculate from Supabase Liability table
 
 function calcRating(ratio: number): { grade: string; color: string; stars: number; label: string } {
   if (ratio >= 3.0) return { grade: 'AAA', color: '#10b981', stars: 5, label: 'Excepcional' };
@@ -67,37 +67,9 @@ export default function GuaranteesPage() {
   const [formStatus, setFormStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   React.useEffect(() => {
-    const fetchGuarantees = async () => {
-      try {
-        const response = await fetch('http://localhost:3001/data/guarantees');
-        if (!response.ok) throw new Error('Failed to fetch');
-        const json = await response.json();
-        
-        const guarantees = json.map((item: any) => {
-          const desc = item.description.toLowerCase();
-          let tipo = 'Terra';
-          if (desc.includes('penhor') || desc.includes('cda') || desc.includes('wa')) tipo = 'Título / Penhor';
-          else if (desc.includes('cpr') || desc.includes('futura')) tipo = 'Produção Futura';
-          else if (desc.includes('trator') || desc.includes('colheit') || desc.includes('pulveriz') || desc.includes('máquina')) tipo = 'Máquinas';
-          else if (desc.includes('barracão') || desc.includes('silo') || desc.includes('armaz')) tipo = 'Imóvel Rural';
-
-          return {
-            id: item.id,
-            descricao: item.description,
-            valor: item.value,
-            tipo,
-            status: 'aceita', // Backend does not track status yet
-          };
-        });
-        setData(guarantees);
-      } catch (err) {
-        toastError('Erro ao carregar garantias da API');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchGuarantees();
-  }, [toastError]);
+    // TODO: Connect to Supabase Guarantee table
+    setLoading(false);
+  }, []);
 
   const [form, setForm] = useState({ tipo: '', descricao: '', valor: '' });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -134,17 +106,7 @@ export default function GuaranteesPage() {
   const handleAdd = async () => {
     if (!validateForm()) { setFormStatus('error'); toastError('Preencha todos os campos obrigatórios'); setTimeout(() => setFormStatus('idle'), 2000); return; }
     
-    try {
-      await fetch('http://localhost:3001/data/guarantees', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer test-token' },
-        body: JSON.stringify({
-          farmId: 'some-farm-id',
-          description: form.descricao,
-          value: parseFloat(form.valor)
-        })
-      });
-    } catch(e) {}
+    // TODO: Connect to Supabase
 
     const newItem: Garantia = {
       id: gerarId(), tipo: form.tipo, descricao: form.descricao,

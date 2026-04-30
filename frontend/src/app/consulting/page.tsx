@@ -43,18 +43,7 @@ const contratoConfig = {
   anual: { label: 'Anual', bg: 'bg-cyan-950/40 border-cyan-800 text-cyan-400' },
 };
 
-const initialData: Consultoria[] = [
-  { id: '1', tipoConsultoria: 'Agronômica', consultor: 'AgroPlan Consultoria', descricao: 'Manejo integrado de pragas e doenças', valor: 12000, periodo: '2024/25', contrato: 'mensal' },
-  { id: '2', tipoConsultoria: 'Agronômica', consultor: 'Dr. Marcelo Rodrigues', descricao: 'Análise de solo e recomendação de calagem', valor: 8500, periodo: '2024/25', contrato: 'projeto' },
-  { id: '3', tipoConsultoria: 'Financeira', consultor: 'GrainFinance Assessoria', descricao: 'Gestão de hedge e derivativos agrícolas', valor: 15000, periodo: '2024/25', contrato: 'mensal' },
-  { id: '4', tipoConsultoria: 'Financeira', consultor: 'Capital Rural Partners', descricao: 'Estruturação de crédito rural (Plano Safra)', valor: 25000, periodo: '2024/25', contrato: 'projeto' },
-  { id: '5', tipoConsultoria: 'Contábil', consultor: 'Escritório Fonseca & Associados', descricao: 'Contabilidade rural e apuração fiscal', valor: 6500, periodo: '2024/25', contrato: 'mensal' },
-  { id: '6', tipoConsultoria: 'Contábil', consultor: 'Escritório Fonseca & Associados', descricao: 'Declaração ITR e IR pessoa jurídica', valor: 4200, periodo: '2024/25', contrato: 'anual' },
-  { id: '7', tipoConsultoria: 'Jurídica', consultor: 'Advocacia Agrária Silva', descricao: 'Regularização fundiária e contratos', valor: 9800, periodo: '2024/25', contrato: 'projeto' },
-  { id: '8', tipoConsultoria: 'Ambiental', consultor: 'EcoAgro Consultoria', descricao: 'Licenciamento ambiental e CAR', valor: 18000, periodo: '2024/25', contrato: 'projeto' },
-  { id: '9', tipoConsultoria: 'Seguros', consultor: 'AgroSeg Corretora', descricao: 'Gestão de apólices e sinistros', valor: 3500, periodo: '2024/25', contrato: 'anual' },
-  { id: '10', tipoConsultoria: 'Agronômica', consultor: 'AgTech Solutions', descricao: 'Agricultura de precisão e NDVI', valor: 22000, periodo: '2024/25', contrato: 'anual' },
-];
+const initialData: Consultoria[] = [];
 
 function gerarId() { return Math.random().toString(36).substring(2, 9); }
 

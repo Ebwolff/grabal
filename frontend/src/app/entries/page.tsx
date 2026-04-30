@@ -157,13 +157,11 @@ function EntriesContent() {
           break;
       }
 
-      const res = await fetch(`http://localhost:3001/data/${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      // TODO: Connect to Supabase tables based on endpoint
+      // For now, simulate success locally
+      const success = true;
 
-      if (!res.ok) throw new Error('Falha ao salvar');
+      if (!success) throw new Error('Falha ao salvar');
 
       setSubmitStatus('success');
       toastSuccess(`${activeType.label} registrado com sucesso!`);

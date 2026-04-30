@@ -8,12 +8,7 @@ import { cn } from '@/lib/utils';
 import { Plus, MapPin, Sprout, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const farms = [
-  { id: 1, name: 'Fazenda São João', location: 'Sorriso - MT', totalArea: 2400, agriArea: 1800, producer: 'João Silva', safras: ['2023/24', '2024/25'], cultures: ['Soja', 'Milho'] },
-  { id: 2, name: 'Fazenda Rio Doce', location: 'Rio Verde - GO', totalArea: 5200, agriArea: 4100, producer: 'Fazenda Rio Doce S/A', safras: ['2023/24'], cultures: ['Soja', 'Algodão', 'Milho'] },
-  { id: 3, name: 'Fazenda Boa Vista', location: 'Uberlândia - MG', totalArea: 1200, agriArea: 950, producer: 'Carlos Agronegócios', safras: ['2023/24', '2024/25'], cultures: ['Café', 'Milho'] },
-  { id: 4, name: 'Fazenda Santa Maria', location: 'Cascavel - PR', totalArea: 800, agriArea: 620, producer: 'Ana Pereira', safras: ['2024/25'], cultures: ['Soja', 'Trigo'] },
-];
+const farms: Array<{ id: number; name: string; location: string; totalArea: number; agriArea: number; producer: string; safras: string[]; cultures: string[] }> = [];
 
 export default function FarmsPage() {
   const { isPrivate } = usePrivacy();
@@ -33,10 +28,10 @@ export default function FarmsPage() {
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
           {[
-            { label: 'Total Fazendas', value: '4' },
-            { label: 'Área Total', value: '9.600 ha' },
-            { label: 'Área Agrícola', value: '7.470 ha' },
-            { label: 'Safras Ativas', value: '2' },
+            { label: 'Total Fazendas', value: farms.length.toString() },
+            { label: 'Área Total', value: `${farms.reduce((s, f) => s + f.totalArea, 0).toLocaleString()} ha` },
+            { label: 'Área Agrícola', value: `${farms.reduce((s, f) => s + f.agriArea, 0).toLocaleString()} ha` },
+            { label: 'Safras Ativas', value: [...new Set(farms.flatMap(f => f.safras))].length.toString() },
           ].map((s, i) => (
             <motion.div
               key={s.label}
