@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
 import { motion } from 'framer-motion';
 
 interface Servico {
@@ -52,12 +53,26 @@ export default function ServicesPage() {
   React.useEffect(() => {
     const fetchServices = async () => {
       try {
-        const response = await fetch('http://localhost:3001/data/costs');
-        if (!response.ok) throw new Error('Failed to fetch');
-        const json = await response.json();
-        const servicos = json
-          .filter((c: any) => c.type === 'SERVICOS')
-          .flatMap((c: any) => c.items.map((item: any) => {
+        const supabase = createClient();
+        const { data: json, error } = await supabase
+          .from('Cost')
+          .select(`
+            id, type,
+            items:CostItem(*),
+            cultura:Cultura(
+              name,
+              safra:Safra(
+                year,
+                farm:Farm(name)
+              )
+            )
+          `)
+          .eq('type', 'SERVICOS');
+
+        if (error) throw error;
+
+        const servicos = (json || [])
+          .flatMap((c: any) => (c.items || []).map((item: any) => {
             let tipo: Servico['tipoServico'] = 'plantio';
             if (item.description.toLowerCase().includes('pulveriz') || item.description.toLowerCase().includes('aplica') || item.description.toLowerCase().includes('desfolha')) tipo = 'pulverizacao';
             if (item.description.toLowerCase().includes('colheita')) tipo = 'colheita';
@@ -74,7 +89,8 @@ export default function ServicesPage() {
           }));
         setData(servicos);
       } catch (err) {
-        toastError('Erro ao carregar serviços da API');
+        console.error(err);
+        toastError('Erro ao carregar serviços do Supabase');
       } finally {
         setLoading(false);
       }
