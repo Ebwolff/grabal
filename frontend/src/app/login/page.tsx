@@ -1,11 +1,50 @@
 'use client';
 
-import React from 'react';
-import { ShieldCheck, Lock, Mail, ArrowRight } from 'lucide-react';
-import Link from 'next/link';
+import React, { useState } from 'react';
+import { ShieldCheck, Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { createBrowserClient } from '@/lib/supabase/client';
+import { useToast } from '@/components/ToastProvider';
 
 export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const { addToast } = useToast();
+  const supabase = createBrowserClient();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      addToast('error', 'Erro', 'Preencha todos os campos.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      addToast('success', 'Acesso Liberado', 'Autenticação bem-sucedida.');
+      router.push('/');
+      router.refresh();
+    } catch (error: any) {
+      console.error('Login error:', error);
+      addToast('error', 'Falha no Acesso', error.message || 'Credenciais inválidas.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-industrial-bg text-white flex items-center justify-center p-4 font-industrial overflow-hidden relative">
       {/* Background Decor */}
@@ -32,15 +71,18 @@ export default function LoginPage() {
         </div>
 
         {/* Form */}
-        <div className="space-y-6">
+        <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Email Corporativo</label>
             <div className="relative group">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary-light transition-colors" size={18} />
               <input 
                 type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="nome@empresa.com"
                 className="w-full bg-slate-900 border border-industrial-border px-11 py-4 text-sm focus:outline-none focus:border-primary transition-all placeholder:text-slate-700" 
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -51,17 +93,33 @@ export default function LoginPage() {
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary-light transition-colors" size={18} />
               <input 
                 type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="********"
                 className="w-full bg-slate-900 border border-industrial-border px-11 py-4 text-sm focus:outline-none focus:border-primary transition-all placeholder:text-slate-700" 
+                disabled={isLoading}
               />
             </div>
           </div>
 
-          <Link href="/" className="w-full bg-primary hover:bg-primary-light text-white font-semibold py-5 flex items-center justify-center gap-2 group transition-all duration-300">
-            Acessar Terminal
-            <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </div>
+          <button 
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-primary hover:bg-primary-light text-white font-semibold py-5 flex items-center justify-center gap-2 group transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                Autenticando...
+              </>
+            ) : (
+              <>
+                Acessar Terminal
+                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              </>
+            )}
+          </button>
+        </form>
 
         <div className="mt-10 pt-8 border-t border-industrial-border text-center">
           <p className="text-[10px] text-slate-600 uppercase font-black tracking-widest">
