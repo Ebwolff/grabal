@@ -12,13 +12,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { addToast } = useToast();
+  const { error: showError, success: showSuccess } = useToast();
   const supabase = createClient();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      addToast('error', 'Erro', 'Preencha todos os campos.');
+      showError('Preencha todos os campos.');
       return;
     }
 
@@ -34,12 +34,12 @@ export default function LoginPage() {
         throw error;
       }
 
-      addToast('success', 'Acesso Liberado', 'Autenticação bem-sucedida.');
+      showSuccess('Autenticação bem-sucedida.');
       router.push('/');
       router.refresh();
-    } catch (error: any) {
-      console.error('Login error:', error);
-      addToast('error', 'Falha no Acesso', error.message || 'Credenciais inválidas.');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      showError(err.message || 'Credenciais inválidas.');
     } finally {
       setIsLoading(false);
     }
