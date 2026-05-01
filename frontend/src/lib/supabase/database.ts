@@ -62,6 +62,7 @@ export interface ProductionRecord {
   totalProduction: number
   createdAt: string
   updatedAt: string
+  Cultura?: any
 }
 
 export interface Asset {
@@ -112,6 +113,7 @@ export interface CostRecord {
   createdAt: string
   updatedAt: string
   items?: CostItem[]
+  Cultura?: any
 }
 
 export interface CostItem {
@@ -144,6 +146,17 @@ export async function createProducer(producer: Omit<Producer, 'id' | 'createdAt'
   const { data, error } = await supabase().from('Producer').insert(producer).select().single()
   if (error) throw error
   return data
+}
+
+export async function updateProducer(id: string, producer: Partial<Omit<Producer, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Producer> {
+  const { data, error } = await supabase().from('Producer').update(producer).eq('id', id).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteProducer(id: string): Promise<void> {
+  const { error } = await supabase().from('Producer').delete().eq('id', id)
+  if (error) throw error
 }
 
 // Farm
@@ -251,6 +264,17 @@ export async function createCPR(cpr: Omit<CPR, 'id' | 'createdAt' | 'updatedAt'>
   return data
 }
 
+export async function updateCPR(id: string, cpr: Partial<Omit<CPR, 'id' | 'createdAt' | 'updatedAt'>>): Promise<CPR> {
+  const { data, error } = await supabase().from('CPR').update(cpr).eq('id', id).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteCPR(id: string): Promise<void> {
+  const { error } = await supabase().from('CPR').delete().eq('id', id)
+  if (error) throw error
+}
+
 // Guarantee
 export async function getGuarantees(farmId?: string): Promise<Guarantee[]> {
   let query = supabase().from('Guarantee').select('*').order('createdAt', { ascending: false })
@@ -267,13 +291,52 @@ export async function createGuarantee(guarantee: Omit<Guarantee, 'id' | 'created
 }
 
 // Production
+export async function getProductions(): Promise<ProductionRecord[]> {
+  const { data, error } = await supabase()
+    .from('Production')
+    .select('*, Cultura(name, safraId, Safra(year, description, farmId, Farm(name)))')
+    .order('createdAt', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
 export async function createProduction(production: Omit<ProductionRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<ProductionRecord> {
   const { data, error } = await supabase().from('Production').insert(production).select().single()
   if (error) throw error
   return data
 }
 
+export async function updateProduction(id: string, production: Partial<Omit<ProductionRecord, 'id' | 'createdAt' | 'updatedAt'>>): Promise<ProductionRecord> {
+  const { data, error } = await supabase().from('Production').update(production).eq('id', id).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteProduction(id: string): Promise<void> {
+  const { error } = await supabase().from('Production').delete().eq('id', id)
+  if (error) throw error
+}
+
 // Cost + CostItem
+export async function getCostsByType(type: string): Promise<CostRecord[]> {
+  const { data, error } = await supabase()
+    .from('Cost')
+    .select('*, items:CostItem(*), Cultura(name, safraId, Safra(year, description, farmId, Farm(name)))')
+    .eq('type', type)
+    .order('createdAt', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
+export async function getAllCosts(): Promise<CostRecord[]> {
+  const { data, error } = await supabase()
+    .from('Cost')
+    .select('*, items:CostItem(*), Cultura(name, safraId, Safra(year, description, farmId, Farm(name)))')
+    .order('createdAt', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
 export async function createCostWithItems(
   cost: Omit<CostRecord, 'id' | 'createdAt' | 'updatedAt' | 'items'>,
   items: Omit<CostItem, 'id' | 'costId' | 'createdAt' | 'updatedAt'>[]
@@ -289,3 +352,18 @@ export async function createCostWithItems(
 
   return costData
 }
+
+export async function updateCost(id: string, cost: Partial<Omit<CostRecord, 'id' | 'createdAt' | 'updatedAt' | 'items'>>): Promise<CostRecord> {
+  const { data, error } = await supabase().from('Cost').update(cost).eq('id', id).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteCost(id: string): Promise<void> {
+  const { error: itemsError } = await supabase().from('CostItem').delete().eq('costId', id)
+  if (itemsError) throw itemsError
+
+  const { error } = await supabase().from('Cost').delete().eq('id', id)
+  if (error) throw error
+}
+

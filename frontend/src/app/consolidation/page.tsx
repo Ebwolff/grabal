@@ -1,50 +1,120 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { MainContent } from '@/components/MainContent';
 import { PageHeader } from '@/components/PageHeader';
 import { usePrivacy } from '@/context/PrivacyContext';
+import { useGlobalFilter } from '@/context/GlobalFilterContext';
 import { cn } from '@/lib/utils';
 import {
   TrendingUp, TrendingDown, DollarSign, Target, ArrowRight,
-  Landmark, PieChart as PieIcon, BarChart3, Layers, Shield
+  Landmark, PieChart as PieIcon, BarChart3, Layers, Shield, Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   AreaChart, Area, CartesianGrid, PieChart, Pie, Cell as PieCell
 } from 'recharts';
-
-// Data will come from Supabase
-const productionData: Array<{ cultura: string; area: number; produtividade: number; precoVenda: number }> = [];
-
-const cmvComponents = {
-  insumos: 0, servicos: 0, maoDeObra: 0,
-  armazenagem: 0, despesas: 0, consultoria: 0, frete: 0,
-};
-const cmvTotal = Object.values(cmvComponents).reduce((s, v) => s + v, 0);
-
-const depreciation = 0;
-const financialExpenses = 0;
-const taxes = 0;
+import { getProductions, getAllCosts, ProductionRecord, CostRecord } from '@/lib/supabase/database';
 
 const monthlyData: Array<{ mes: string; receita: number; custo: number }> = [];
 
-const cultureColors = ['#10b981', '#06b6d4', '#f59e0b', '#a855f7', '#ef4444'];
+const cultureColors = ['#10b981', '#06b6d4', '#f59e0b', '#a855f7', '#ef4444', '#f97316', '#8b5cf6'];
 
 export default function ConsolidationPage() {
   const { isPrivate } = usePrivacy();
+  const { safra: filterSafra, fazenda: filterFazenda, cultura: filterCultura } = useGlobalFilter();
+
+  const [productions, setProductions] = useState<ProductionRecord[]>([]);
+  const [costs, setCosts] = useState<CostRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setLoading(true);
+        const [prodsData, costsData] = await Promise.all([
+          getProductions(),
+          getAllCosts()
+        ]);
+        setProductions(prodsData);
+        setCosts(costsData);
+      } catch (err) {
+        console.error('Failed to load consolidation data', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
   const financials = useMemo(() => {
-    const cultureResults = productionData.map((c, i) => {
-      const producaoTotal = c.area * c.produtividade;
-      const receitaBruta = producaoTotal * c.precoVenda;
-      return { ...c, producaoTotal, receitaBruta, color: cultureColors[i] };
+    // 1. Filter Productions
+    const filteredProds = productions.filter(p => {
+      const culturaInfo = p.Cultura as any;
+      if (!culturaInfo) return false;
+      if (filterSafra && culturaInfo.Safra?.year !== filterSafra) return false;
+      if (filterFazenda && !culturaInfo.Safra?.Farm?.name?.includes(filterFazenda)) return false;
+      if (filterCultura && culturaInfo.name !== filterCultura) return false;
+      return true;
     });
+
+    // 2. Group Productions by Culture
+    const cultureGroups: Record<string, { area: number; producaoTotal: number; precoVenda: number }> = {};
+    filteredProds.forEach(p => {
+      const culturaName = (p.Cultura as any)?.name || 'Outros';
+      if (!cultureGroups[culturaName]) {
+        cultureGroups[culturaName] = { area: 0, producaoTotal: 0, precoVenda: 0 };
+      }
+      cultureGroups[culturaName].area += p.area || 0;
+      cultureGroups[culturaName].producaoTotal += p.totalProduction || 0;
+      // Preço de venda (usando um mock ou estimativa, já que não temos venda real na tabela production)
+      // Vamos assumir R$ 120 por saca para soja, 60 para milho, etc. (Mock provisório)
+      let defaultPrice = 100;
+      if (culturaName.toLowerCase().includes('soja')) defaultPrice = 120;
+      if (culturaName.toLowerCase().includes('milho')) defaultPrice = 60;
+      if (culturaName.toLowerCase().includes('algodão')) defaultPrice = 200;
+      cultureGroups[culturaName].precoVenda = defaultPrice; 
+    });
+
+    const cultureResults = Object.entries(cultureGroups).map(([cultura, data], i) => {
+      const receitaBruta = data.producaoTotal * data.precoVenda;
+      const produtividade = data.area > 0 ? (data.producaoTotal / data.area) : 0;
+      return { 
+        cultura, 
+        area: data.area, 
+        produtividade: Number(produtividade.toFixed(1)),
+        producaoTotal: data.producaoTotal,
+        precoVenda: data.precoVenda,
+        receitaBruta, 
+        color: cultureColors[i % cultureColors.length] 
+      };
+    }).sort((a, b) => b.receitaBruta - a.receitaBruta);
 
     const receitaBruta = cultureResults.reduce((s, c) => s + c.receitaBruta, 0);
     const deducoes = receitaBruta * 0.05;
     const receitaLiquida = receitaBruta - deducoes;
+
+    // 3. Filter Costs for CMV
+    const filteredCosts = costs.filter(c => {
+      const culturaInfo = c.Cultura as any;
+      if (!culturaInfo) return false;
+      if (filterSafra && culturaInfo.Safra?.year !== filterSafra) return false;
+      if (filterFazenda && !culturaInfo.Safra?.Farm?.name?.includes(filterFazenda)) return false;
+      if (filterCultura && culturaInfo.name !== filterCultura) return false;
+      return true;
+    });
+
+    const cmvTotal = filteredCosts.reduce((sum, cost) => {
+      // Consider all costs as CMV for now, except maybe ADMIN/FINANCIAL if we had them
+      const costItemsSum = cost.items?.reduce((s, item) => s + (item.value || 0), 0) || 0;
+      return sum + costItemsSum;
+    }, 0);
+
+    const depreciation = 0; // Fixos por enquanto
+    const financialExpenses = 0;
+    const taxes = 0;
+
     const lucroBruto = receitaLiquida - cmvTotal;
     const margemBruta = receitaLiquida > 0 ? (lucroBruto / receitaLiquida * 100) : 0;
     const ebitda = lucroBruto - depreciation;
@@ -53,22 +123,22 @@ export default function ConsolidationPage() {
     const lucroLiquido = lucroOperacional - taxes;
     const margemLiquida = receitaLiquida > 0 ? (lucroLiquido / receitaLiquida * 100) : 0;
 
-    return { cultureResults, receitaBruta, deducoes, receitaLiquida, lucroBruto, margemBruta, cmvTotal, ebitda, margemEbitda, lucroOperacional, lucroLiquido, margemLiquida };
-  }, []);
+    return { cultureResults, receitaBruta, deducoes, receitaLiquida, lucroBruto, margemBruta, cmvTotal, ebitda, margemEbitda, lucroOperacional, lucroLiquido, margemLiquida, depreciation, financialExpenses, taxes };
+  }, [productions, costs, filterSafra, filterFazenda, filterCultura]);
 
   const dreRows = [
     { label: 'Receita Bruta', value: financials.receitaBruta, level: 0, bold: true },
     { label: '(-) Deduções (5%)', value: -financials.deducoes, level: 1 },
     { label: 'Receita Líquida', value: financials.receitaLiquida, level: 0, highlight: true },
-    { label: '(-) CMV', value: -cmvTotal, level: 1, accent: 'red' },
+    { label: '(-) CMV', value: -financials.cmvTotal, level: 1, accent: 'red' },
     { label: 'Lucro Bruto', value: financials.lucroBruto, level: 0, highlight: true },
     { label: `Margem Bruta`, value: financials.margemBruta, level: 1, pct: true },
-    { label: '(-) Depreciação', value: -depreciation, level: 1 },
+    { label: '(-) Depreciação', value: -financials.depreciation, level: 1 },
     { label: 'EBITDA', value: financials.ebitda, level: 0, highlight: true, accent: 'cyan' },
     { label: 'Margem EBITDA', value: financials.margemEbitda, level: 1, pct: true },
-    { label: '(-) Despesas Financeiras', value: -financialExpenses, level: 1 },
+    { label: '(-) Despesas Financeiras', value: -financials.financialExpenses, level: 1 },
     { label: 'Lucro Operacional', value: financials.lucroOperacional, level: 0, highlight: true },
-    { label: '(-) Impostos', value: -taxes, level: 1 },
+    { label: '(-) Impostos', value: -financials.taxes, level: 1 },
     { label: 'Lucro Líquido', value: financials.lucroLiquido, level: 0, highlight: true, accent: 'green' },
     { label: 'Margem Líquida', value: financials.margemLiquida, level: 1, pct: true },
   ];
@@ -79,17 +149,30 @@ export default function ConsolidationPage() {
 
   const waterfallData = [
     { name: 'Receita Líq.', value: financials.receitaLiquida, color: '#10b981' },
-    { name: 'CMV', value: -cmvTotal, color: '#ef4444' },
+    { name: 'CMV', value: -financials.cmvTotal, color: '#ef4444' },
     { name: 'Lucro Bruto', value: financials.lucroBruto, color: '#10b981' },
-    { name: 'Deprec.', value: -depreciation, color: '#f59e0b' },
+    { name: 'Deprec.', value: -financials.depreciation, color: '#f59e0b' },
     { name: 'EBITDA', value: financials.ebitda, color: '#06b6d4' },
-    { name: 'Desp. Fin.', value: -financialExpenses, color: '#f97316' },
-    { name: 'Impostos', value: -taxes, color: '#8b5cf6' },
+    { name: 'Desp. Fin.', value: -financials.financialExpenses, color: '#f97316' },
+    { name: 'Impostos', value: -financials.taxes, color: '#8b5cf6' },
     { name: 'Lucro Líq.', value: financials.lucroLiquido, color: '#10b981' },
   ];
 
   const fmt = (v: number) => `R$ ${Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
   const fmtM = (v: number) => `R$ ${(Math.abs(v) / 1000000).toFixed(2)}M`;
+
+  if (loading) {
+    return (
+      <MainContent>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="flex flex-col items-center gap-4 text-slate-400">
+            <Loader2 size={32} className="animate-spin text-primary" />
+            <p>Consolidando informações financeiras...</p>
+          </div>
+        </div>
+      </MainContent>
+    );
+  }
 
   return (
     <MainContent>
@@ -103,7 +186,7 @@ export default function ConsolidationPage() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
           {[
             { label: 'Receita Bruta', value: fmtM(financials.receitaBruta), icon: DollarSign, color: '#10b981', trend: '+12.3%' },
-            { label: 'CMV', value: fmtM(cmvTotal), icon: Target, color: '#ef4444', trend: '-3.1%' },
+            { label: 'CMV', value: fmtM(financials.cmvTotal), icon: Target, color: '#ef4444', trend: '-3.1%' },
             { label: 'Lucro Bruto', value: fmtM(financials.lucroBruto), icon: TrendingUp, color: '#10b981', trend: '+8.7%' },
             { label: 'EBITDA', value: fmtM(financials.ebitda), icon: BarChart3, color: '#06b6d4', trend: '+5.2%' },
             { label: 'Lucro Líquido', value: fmtM(financials.lucroLiquido), icon: Landmark, color: '#22c55e', trend: '+6.8%' },

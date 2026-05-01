@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { MainContent } from '@/components/MainContent';
 import { PageHeader } from '@/components/PageHeader';
 import { usePrivacy } from '@/context/PrivacyContext';
@@ -8,13 +8,14 @@ import { useGlobalFilter } from '@/context/GlobalFilterContext';
 import { cn } from '@/lib/utils';
 import {
   Layers, TrendingUp, TrendingDown,
-  ArrowRight, DollarSign
+  ArrowRight, DollarSign, Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Cell as PieCell
 } from 'recharts';
+import { getProductions, getAllCosts, ProductionRecord, CostRecord } from '@/lib/supabase/database';
 
 interface DREData {
   safra: string;
@@ -30,16 +31,111 @@ interface DREData {
   impostos: number;
 }
 
-const dreRawData: DREData[] = [];
-
-const safras = [...new Set(dreRawData.map(d => d.safra))];
-const fazendas = [...new Set(dreRawData.map(d => d.fazenda))];
-const culturas = [...new Set(dreRawData.map(d => d.cultura))];
 const cultureColors: Record<string, string> = { Soja: '#10b981', Milho: '#06b6d4', Algodão: '#f59e0b', Café: '#a855f7', Trigo: '#ef4444' };
 
 export default function DREPage() {
   const { isPrivate } = usePrivacy();
   const { safra: filterSafra, fazenda: filterFazenda, cultura: filterCultura } = useGlobalFilter();
+
+  const [productions, setProductions] = useState<ProductionRecord[]>([]);
+  const [costs, setCosts] = useState<CostRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setLoading(true);
+        const [prodsData, costsData] = await Promise.all([
+          getProductions(),
+          getAllCosts()
+        ]);
+        setProductions(prodsData);
+        setCosts(costsData);
+      } catch (err) {
+        console.error('Failed to load dre data', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  const dreRawData = useMemo<DREData[]>(() => {
+    const cultureMap: Record<string, DREData> = {};
+
+    productions.forEach(p => {
+      const culturaInfo = p.Cultura as any;
+      const safraName = culturaInfo?.Safra?.year || 'Desconhecida';
+      const fazendaName = culturaInfo?.Safra?.Farm?.name || 'Desconhecida';
+      const culturaName = culturaInfo?.name || 'Outros';
+
+      const key = `${safraName}-${fazendaName}-${culturaName}`;
+      if (!cultureMap[key]) {
+        cultureMap[key] = {
+          safra: safraName,
+          fazenda: fazendaName,
+          cultura: culturaName,
+          receitaBruta: 0,
+          deducoes: 0,
+          cmv: 0,
+          custosOperacionais: 0,
+          despesasAdmin: 0,
+          depreciacaoAmort: 0,
+          despesasFinanceiras: 0,
+          impostos: 0
+        };
+      }
+
+      // Preço mock provisório (igual da consolidação)
+      let defaultPrice = 100;
+      if (culturaName.toLowerCase().includes('soja')) defaultPrice = 120;
+      if (culturaName.toLowerCase().includes('milho')) defaultPrice = 60;
+      if (culturaName.toLowerCase().includes('algodão')) defaultPrice = 200;
+
+      const receita = (p.totalProduction || 0) * defaultPrice;
+      cultureMap[key].receitaBruta += receita;
+      cultureMap[key].deducoes += receita * 0.05; // 5% default
+    });
+
+    costs.forEach(c => {
+      const culturaInfo = c.Cultura as any;
+      const safraName = culturaInfo?.Safra?.year || 'Desconhecida';
+      const fazendaName = culturaInfo?.Safra?.Farm?.name || 'Desconhecida';
+      const culturaName = culturaInfo?.name || 'Outros';
+
+      const key = `${safraName}-${fazendaName}-${culturaName}`;
+      if (!cultureMap[key]) {
+        cultureMap[key] = {
+          safra: safraName,
+          fazenda: fazendaName,
+          cultura: culturaName,
+          receitaBruta: 0,
+          deducoes: 0,
+          cmv: 0,
+          custosOperacionais: 0,
+          despesasAdmin: 0,
+          depreciacaoAmort: 0,
+          despesasFinanceiras: 0,
+          impostos: 0
+        };
+      }
+
+      const costTotal = c.items?.reduce((s, item) => s + (item.value || 0), 0) || 0;
+      
+      // Categorização baseada no tipo (por enquanto usamos cmv para producao e armazenagem, custosOp para o resto)
+      if (c.type === 'MAO_DE_OBRA' || c.type === 'ARMAZENAGEM' || c.type === 'INSUMO') {
+        cultureMap[key].cmv += costTotal;
+      } else if (c.type === 'ADMINISTRATIVO') {
+        cultureMap[key].despesasAdmin += costTotal;
+      } else if (c.type === 'FINANCEIRO') {
+        cultureMap[key].despesasFinanceiras += costTotal;
+      } else {
+        cultureMap[key].custosOperacionais += costTotal;
+      }
+    });
+
+    return Object.values(cultureMap);
+  }, [productions, costs]);
 
   const filtered = useMemo(() => {
     return dreRawData.filter(d =>
@@ -47,7 +143,7 @@ export default function DREPage() {
       (!filterFazenda || d.fazenda.includes(filterFazenda)) &&
       (!filterCultura || d.cultura === filterCultura)
     );
-  }, [filterSafra, filterFazenda, filterCultura]);
+  }, [dreRawData, filterSafra, filterFazenda, filterCultura]);
 
   const consolidated = useMemo(() => {
     const sum = (key: keyof DREData) => filtered.reduce((s, d) => s + (d[key] as number), 0);
@@ -128,6 +224,19 @@ export default function DREPage() {
 
   const fmt = (v: number) => `R$ ${Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
   const fmtK = (v: number) => `R$ ${(Math.abs(v) / 1000).toFixed(0)}k`;
+
+  if (loading) {
+    return (
+      <MainContent>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="flex flex-col items-center gap-4 text-slate-400">
+            <Loader2 size={32} className="animate-spin text-primary" />
+            <p>Gerando Demonstração de Resultado...</p>
+          </div>
+        </div>
+      </MainContent>
+    );
+  }
 
   return (
     <MainContent>

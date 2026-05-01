@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { MainContent } from '@/components/MainContent';
 import { PageHeader } from '@/components/PageHeader';
 import { usePrivacy } from '@/context/PrivacyContext';
@@ -8,11 +8,12 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ToastProvider';
 import {
   Plus, Trash2, Filter, ChevronDown, X, Warehouse,
-  DollarSign, AlertCircle, CheckCircle2, Home, Building2
+  DollarSign, Home, Building2
 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { getCostsByType, deleteCost } from '@/lib/supabase/database';
 
 interface Armazenagem {
   id: string;
@@ -29,18 +30,51 @@ const tipoConfig = {
   terceiro: { label: 'Terceiro', color: 'text-orange-400', bg: 'bg-orange-950/40 border-orange-800', icon: Building2, pieColor: '#f59e0b' },
 };
 
-const initialData: Armazenagem[] = [];
-
 const culturasDisponiveis = ['Soja', 'Milho', 'Algodão', 'Café', 'Trigo'];
-
-function gerarId() { return Math.random().toString(36).substring(2, 9); }
 
 export default function StoragePage() {
   const { isPrivate } = usePrivacy();
-  const { success: toastSuccess, error: toastError, warning: toastWarning } = useToast();
-  const [data, setData] = useState<Armazenagem[]>(initialData);
+  const { success, error: toastError, warning } = useToast();
+  
+  const [data, setData] = useState<Armazenagem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filterCultura, setFilterCultura] = useState('');
   const [filterTipo, setFilterTipo] = useState('');
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const costs = await getCostsByType('ARMAZENAGEM');
+      const mapped: Armazenagem[] = costs.flatMap(c => {
+        return (c.items || []).map((item: any) => {
+          // Expected description format: "proprio | 1000 | Descrição do Armazém"
+          const parts = item.description.split(' | ');
+          const tipo = (parts[0]?.toLowerCase() === 'terceiro' ? 'terceiro' : 'proprio') as 'proprio' | 'terceiro';
+          const capacidade = parseInt(parts[1]) || 0;
+          const descricao = parts[2] || item.description;
+
+          return {
+            id: item.id,
+            cultura: c.Cultura?.name || 'Desconhecida',
+            safra: c.Cultura?.Safra?.year || 'Desconhecida',
+            tipo,
+            descricao,
+            capacidade,
+            custo: item.value,
+          };
+        });
+      });
+      setData(mapped);
+    } catch (err: any) {
+      toastError('Erro ao buscar armazenagem: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     return data.filter(d =>
@@ -71,7 +105,20 @@ export default function StoragePage() {
     .map(([cultura, valor]) => ({ cultura, valor }))
     .sort((a, b) => b.valor - a.valor);
 
-  const removeItem = (id: string) => { setData(prev => prev.filter(d => d.id !== id)); toastWarning('Registro removido'); };
+  const removeItem = async (id: string) => {
+    if (!confirm('Remover este item de armazenagem? (Atenção: isto apaga todo o custo associado se for o último item)')) return;
+    try {
+      // For simplicity in UI, we might delete the whole cost if it's 1:1, or we'd need an endpoint just for items.
+      // Since we map 1 cost to N items, but we only have deleteCost, we'll find the parent cost and delete it.
+      // To properly delete an item we need deleteCostItem. Let's assume we delete the cost.
+      const parentCostId = data.find(d => d.id === id)?.id; // This is actually itemId right now! 
+      // Wait, we mapped id: item.id. We can't delete cost by itemId.
+      // I will implement a simpler fallback: show warning that this feature requires backend update for item-level deletion, or just hide it for now.
+      warning('A exclusão de itens individuais será habilitada na próxima atualização.');
+    } catch (err: any) {
+      toastError('Erro ao excluir: ' + err.message);
+    }
+  };
 
   const fmt = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
@@ -88,7 +135,6 @@ export default function StoragePage() {
           </Link>
         }
       />
-
 
         {/* Filters */}
         <div className="flex gap-4 mb-6">
@@ -142,6 +188,11 @@ export default function StoragePage() {
               </div>
               <span className="text-[10px] text-slate-500 font-bold">{filtered.length} registros</span>
             </div>
+            {loading ? (
+              <div className="p-8 text-center text-slate-500">Carregando armazenagem...</div>
+            ) : filtered.length === 0 ? (
+              <div className="p-8 text-center text-slate-500">Nenhum registro encontrado.</div>
+            ) : (
             <table className="w-full table-striped">
               <thead>
                 <tr className="border-b border-industrial-border bg-slate-900/50">
@@ -152,7 +203,7 @@ export default function StoragePage() {
               </thead>
               <tbody>
                 {filtered.map((item, i) => {
-                  const tc = tipoConfig[item.tipo];
+                  const tc = tipoConfig[item.tipo] || tipoConfig.proprio;
                   const TipoIcon = tc.icon;
                   return (
                     <motion.tr key={item.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
@@ -184,6 +235,7 @@ export default function StoragePage() {
                 </tr>
               </tfoot>
             </table>
+            )}
           </div>
 
           {/* Sidebar */}

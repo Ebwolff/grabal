@@ -1,19 +1,20 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { MainContent } from '@/components/MainContent';
 import { PageHeader } from '@/components/PageHeader';
 import { MetricCard } from '@/components/MetricCard';
 import { usePrivacy } from '@/context/PrivacyContext';
 import { useGlobalFilter } from '@/context/GlobalFilterContext';
+import { useToast } from '@/components/ToastProvider';
 import { cn } from '@/lib/utils';
 import {
   Wheat, Pencil, Check, X, TrendingUp, TrendingDown,
-  ArrowRight, BarChart3, Sprout, MapPin
+  ArrowRight, BarChart3, Sprout, MapPin, Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
-import { createClient } from '@/lib/supabase/client';
+import { getProductions, updateProduction, deleteProduction } from '@/lib/supabase/database';
 
 interface ProducaoItem {
   id: string;
@@ -23,7 +24,6 @@ interface ProducaoItem {
   produtividade: number;
   producaoTotal: number;
   fazenda: string;
-  produtor: string;
   status: 'colhido' | 'em_campo' | 'planejado';
 }
 
@@ -41,9 +41,38 @@ const cultureColors: Record<string, string> = {
 export default function ProductionPage() {
   const { isPrivate } = usePrivacy();
   const { safra, fazenda, cultura } = useGlobalFilter();
+  const { success, error, warning } = useToast();
+  
   const [data, setData] = useState<ProducaoItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState({ areaPlantada: '', produtividade: '' });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const records = await getProductions();
+      const mapped = records.map((r: any) => ({
+        id: r.id,
+        cultura: r.Cultura?.name || 'Desconhecida',
+        safra: r.Cultura?.Safra?.year || 'Desconhecida',
+        fazenda: r.Cultura?.Safra?.Farm?.name || 'Desconhecida',
+        areaPlantada: r.area,
+        produtividade: r.productivity,
+        producaoTotal: r.totalProduction,
+        status: 'colhido' as const // Simplification: assume harvested for now, or could depend on dates
+      }));
+      setData(mapped);
+    } catch (err: any) {
+      error('Erro ao buscar produção: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     return data.filter(d =>
@@ -77,12 +106,38 @@ export default function ProductionPage() {
     setEditValues({ areaPlantada: item.areaPlantada.toString(), produtividade: item.produtividade.toString() });
   };
   const cancelEdit = () => { setEditingId(null); setEditValues({ areaPlantada: '', produtividade: '' }); };
-  const saveEdit = (id: string) => {
+  
+  const saveEdit = async (id: string) => {
     const area = parseFloat(editValues.areaPlantada);
     const prod = parseFloat(editValues.produtividade);
-    if (isNaN(area) || isNaN(prod) || area <= 0 || prod <= 0) return;
-    setData(prev => prev.map(d => d.id === id ? { ...d, areaPlantada: area, produtividade: prod, producaoTotal: area * prod } : d));
-    setEditingId(null);
+    if (isNaN(area) || isNaN(prod) || area <= 0 || prod <= 0) {
+      warning('Valores inválidos.');
+      return;
+    }
+    
+    try {
+      await updateProduction(id, {
+        area,
+        productivity: prod,
+        totalProduction: area * prod
+      });
+      success('Produção atualizada!');
+      setEditingId(null);
+      fetchData();
+    } catch (err: any) {
+      error('Erro ao atualizar: ' + err.message);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Deseja excluir este registro de produção?')) return;
+    try {
+      await deleteProduction(id);
+      success('Produção excluída com sucesso!');
+      fetchData();
+    } catch (err: any) {
+      error('Erro ao excluir: ' + err.message);
+    }
   };
 
   return (
@@ -90,7 +145,7 @@ export default function ProductionPage() {
       <PageHeader
         title="Produção"
         accent="Agrícola"
-        description={`Gestão de produção por cultura e safra — Safra ${safra}`}
+        description={`Gestão de produção por cultura e safra — Safra ${safra || 'Todas'}`}
         badge={
           <button className="bg-primary hover:bg-primary-light text-white font-semibold px-5 py-2 text-xs flex items-center gap-2 transition-all rounded-lg">
             Exportar Dados <ArrowRight size={14} />
@@ -119,73 +174,84 @@ export default function ProductionPage() {
           <table className="w-full table-striped">
             <thead>
               <tr>
-                {['Cultura', 'Fazenda', 'Safra', 'Área (ha)', 'Prod. (sc/ha)', 'Total (sc)', 'Status', ''].map(h => (
-                  <th key={h} className="text-left">{h}</th>
+                {['Cultura', 'Fazenda', 'Safra', 'Área (ha)', 'Prod. (sc/ha)', 'Total (sc)', 'Status', 'Ações'].map(h => (
+                  <th key={h} className="text-left font-semibold text-[10px] uppercase text-slate-500 p-3">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              <AnimatePresence>
-                {filtered.map((item, i) => {
-                  const isEditing = editingId === item.id;
-                  const st = statusConfig[item.status];
-                  return (
-                    <motion.tr key={item.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
-                      className={isEditing ? 'bg-primary/5' : ''}
-                    >
-                      <td>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cultureColors[item.cultura] || '#64748b' }} />
-                          <span className="font-semibold text-white">{item.cultura}</span>
-                        </div>
-                      </td>
-                      <td className="text-slate-400">{item.fazenda}</td>
-                      <td className="text-slate-400">{item.safra}</td>
-                      <td>
-                        {isEditing ? (
-                          <input type="number" value={editValues.areaPlantada}
-                            onChange={(e) => setEditValues(p => ({ ...p, areaPlantada: e.target.value }))}
-                            className="w-20 bg-industrial-bg border border-primary-light/50 px-2 py-1 text-xs font-mono rounded focus:outline-none focus-ring" />
-                        ) : (
-                          <span className={cn('font-mono privacy-mask', isPrivate && 'privacy-hidden')}>{item.areaPlantada.toLocaleString('pt-BR')}</span>
-                        )}
-                      </td>
-                      <td>
-                        {isEditing ? (
-                          <input type="number" value={editValues.produtividade}
-                            onChange={(e) => setEditValues(p => ({ ...p, produtividade: e.target.value }))}
-                            className="w-20 bg-industrial-bg border border-primary-light/50 px-2 py-1 text-xs font-mono rounded focus:outline-none focus-ring" />
-                        ) : (
-                          <span className={cn('font-mono privacy-mask', isPrivate && 'privacy-hidden')}>{item.produtividade}</span>
-                        )}
-                      </td>
-                      <td>
-                        <span className={cn('font-semibold font-mono text-success privacy-mask', isPrivate && 'privacy-hidden')}>
-                          {isEditing
-                            ? ((parseFloat(editValues.areaPlantada) || 0) * (parseFloat(editValues.produtividade) || 0)).toLocaleString('pt-BR')
-                            : item.producaoTotal.toLocaleString('pt-BR')
-                          }
-                        </span>
-                      </td>
-                      <td>
-                        <span className={cn('text-[9px] px-2 py-1 font-semibold uppercase border rounded', st.bg, st.color)}>{st.label}</span>
-                      </td>
-                      <td>
-                        {isEditing ? (
-                          <div className="flex gap-1">
-                            <button onClick={() => saveEdit(item.id)} className="p-1 text-success hover:text-success/80"><Check size={14} /></button>
-                            <button onClick={cancelEdit} className="p-1 text-danger hover:text-danger/80"><X size={14} /></button>
+              {loading ? (
+                <tr><td colSpan={8} className="text-center p-8 text-slate-500">Carregando produção...</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={8} className="text-center p-8 text-slate-500">Nenhum registro encontrado.</td></tr>
+              ) : (
+                <AnimatePresence>
+                  {filtered.map((item, i) => {
+                    const isEditing = editingId === item.id;
+                    const st = statusConfig[item.status];
+                    return (
+                      <motion.tr key={item.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
+                        className={isEditing ? 'bg-primary/5' : 'border-b border-industrial-border/50 hover:bg-slate-800/30'}
+                      >
+                        <td className="p-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cultureColors[item.cultura] || '#64748b' }} />
+                            <span className="font-semibold text-white text-xs">{item.cultura}</span>
                           </div>
-                        ) : (
-                          <button onClick={() => startEdit(item)} className="p-1 text-slate-600 hover:text-primary-light transition-colors">
-                            <Pencil size={14} />
-                          </button>
-                        )}
-                      </td>
-                    </motion.tr>
-                  );
-                })}
-              </AnimatePresence>
+                        </td>
+                        <td className="text-slate-400 text-xs p-3">{item.fazenda}</td>
+                        <td className="text-slate-400 text-xs p-3">{item.safra}</td>
+                        <td className="p-3">
+                          {isEditing ? (
+                            <input type="number" value={editValues.areaPlantada}
+                              onChange={(e) => setEditValues(p => ({ ...p, areaPlantada: e.target.value }))}
+                              className="w-20 bg-industrial-bg border border-primary-light/50 px-2 py-1 text-xs font-mono rounded focus:outline-none focus-ring" />
+                          ) : (
+                            <span className={cn('font-mono text-xs privacy-mask', isPrivate && 'privacy-hidden')}>{item.areaPlantada.toLocaleString('pt-BR')}</span>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          {isEditing ? (
+                            <input type="number" value={editValues.produtividade}
+                              onChange={(e) => setEditValues(p => ({ ...p, produtividade: e.target.value }))}
+                              className="w-20 bg-industrial-bg border border-primary-light/50 px-2 py-1 text-xs font-mono rounded focus:outline-none focus-ring" />
+                          ) : (
+                            <span className={cn('font-mono text-xs privacy-mask', isPrivate && 'privacy-hidden')}>{item.produtividade}</span>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          <span className={cn('font-semibold font-mono text-xs text-success privacy-mask', isPrivate && 'privacy-hidden')}>
+                            {isEditing
+                              ? ((parseFloat(editValues.areaPlantada) || 0) * (parseFloat(editValues.produtividade) || 0)).toLocaleString('pt-BR')
+                              : item.producaoTotal.toLocaleString('pt-BR')
+                            }
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <span className={cn('text-[9px] px-2 py-1 font-semibold uppercase border rounded', st.bg, st.color)}>{st.label}</span>
+                        </td>
+                        <td className="p-3">
+                          {isEditing ? (
+                            <div className="flex gap-2">
+                              <button onClick={() => saveEdit(item.id)} className="p-1 text-success hover:text-success/80"><Check size={14} /></button>
+                              <button onClick={cancelEdit} className="p-1 text-danger hover:text-danger/80"><X size={14} /></button>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2">
+                              <button onClick={() => startEdit(item)} className="p-1 text-slate-500 hover:text-primary-light transition-colors">
+                                <Pencil size={14} />
+                              </button>
+                              <button onClick={() => handleDelete(item.id)} className="p-1 text-slate-500 hover:text-red-400 transition-colors">
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </AnimatePresence>
+              )}
             </tbody>
           </table>
         </div>
@@ -264,3 +330,4 @@ export default function ProductionPage() {
     </MainContent>
   );
 }
+

@@ -13,7 +13,8 @@ import { usePrivacy } from '@/context/PrivacyContext';
 import { useSidebar } from '@/context/SidebarContext';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
 interface MenuGroup {
   label: string;
@@ -76,6 +77,14 @@ export function Sidebar() {
   const { isPrivate, togglePrivacy } = usePrivacy();
   const { collapsed, toggleSidebar } = useSidebar();
   const pathname = usePathname();
+  const router = useRouter();
+  const supabase = createClient();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
 
   return (
     <motion.aside
@@ -163,7 +172,7 @@ export function Sidebar() {
           {isPrivate ? <EyeOff className="w-4 h-4 flex-shrink-0" /> : <Eye className="w-4 h-4 flex-shrink-0" />}
           {!collapsed && <span className="text-xs font-medium">Privado: {isPrivate ? 'ON' : 'OFF'}</span>}
         </button>
-        <button className={cn("w-full flex items-center gap-3 px-2.5 py-[7px] text-red-400 hover:text-red-300 transition-colors rounded-lg hover:bg-surface-hover", collapsed && "justify-center px-0")}>
+        <button onClick={handleLogout} className={cn("w-full flex items-center gap-3 px-2.5 py-[7px] text-red-400 hover:text-red-300 transition-colors rounded-lg hover:bg-surface-hover", collapsed && "justify-center px-0")}>
           <LogOut className="w-4 h-4 flex-shrink-0" />
           {!collapsed && <span className="text-xs font-medium">Sair</span>}
         </button>

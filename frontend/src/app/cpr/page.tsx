@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { MainContent } from '@/components/MainContent';
 import { PageHeader } from '@/components/PageHeader';
 import { usePrivacy } from '@/context/PrivacyContext';
@@ -17,8 +17,9 @@ import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip
 } from 'recharts';
 import Link from 'next/link';
+import { getCPRs, deleteCPR } from '@/lib/supabase/database';
 
-interface CPR {
+interface CPRLocal {
   id: string;
   cultura: string;
   volumeComprometido: number;
@@ -49,15 +50,50 @@ function riskLevel(pct: number): { label: string; color: string; icon: typeof Sh
   return { label: 'Crítico', color: '#ef4444', icon: AlertCircle };
 }
 
-const initialData: CPR[] = [];
-
-function gerarId() { return Math.random().toString(36).substring(2, 9); }
-
 export default function CPRPage() {
   const { isPrivate } = usePrivacy();
   const { cultura: globalCultura } = useGlobalFilter();
-  const { success: toastSuccess, error: toastError } = useToast();
-  const [data, setData] = useState<CPR[]>(initialData);
+  const { success: toastSuccess, error: toastError, warning: toastWarning } = useToast();
+  
+  const [data, setData] = useState<CPRLocal[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const cprs = await getCPRs();
+      const mapped = cprs.map(c => {
+        const dueDate = new Date(c.dueDate);
+        const now = new Date();
+        const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
+        
+        let status: CPRLocal['status'] = 'vigente';
+        if (diffDays < 0) status = 'vencida';
+        else if (diffDays <= 30) status = 'proximo';
+
+        return {
+          id: c.id,
+          cultura: c.cultura || 'Não Especificada',
+          volumeComprometido: c.committedVolume || 0,
+          unidade: 'sc', // default
+          valor: c.value || 0,
+          vencimento: dueDate.toLocaleDateString('pt-BR'),
+          comprador: 'Comprador Genérico', // Add buyer to schema if needed
+          status,
+        };
+      });
+      setData(mapped);
+    } catch (err: any) {
+      toastError('Erro ao carregar CPRs: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filtered = useMemo(() => data.filter(d => !globalCultura || d.cultura === globalCultura), [data, globalCultura]);
   const ativas = useMemo(() => filtered.filter(d => d.status !== 'liquidada'), [filtered]);
 
@@ -70,7 +106,7 @@ export default function CPRPage() {
 
     // Risk per culture
     const riskByCultura = Object.entries(volumePorCultura).map(([cultura, vol]) => {
-      const prod = producaoTotal[cultura] || 1;
+      const prod = producaoTotal[cultura] || 1; // Needs real production data to be accurate
       const pct = (vol / prod) * 100;
       const risk = riskLevel(pct);
       return { cultura, volumeComprometido: vol, producaoTotal: prod, pctComprometido: pct, ...risk };
@@ -85,7 +121,16 @@ export default function CPRPage() {
     .map(([cultura, vol]) => ({ name: cultura, value: vol, color: cultureColors[cultura] || '#64748b' }))
     .sort((a, b) => b.value - a.value);
 
-  const removeItem = (id: string) => setData(prev => prev.filter(d => d.id !== id));
+  const removeItem = async (id: string) => {
+    if (!confirm('Deseja realmente excluir esta CPR?')) return;
+    try {
+      await deleteCPR(id);
+      setData(prev => prev.filter(d => d.id !== id));
+      toastWarning('CPR excluída com sucesso');
+    } catch (err: any) {
+      toastError('Erro ao excluir CPR: ' + err.message);
+    }
+  };
 
   const fmt = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
   const fmtM = (v: number) => `R$ ${(v / 1000000).toFixed(2)}M`;
@@ -134,6 +179,11 @@ export default function CPRPage() {
               </div>
               <span className="text-[10px] text-slate-500 font-bold">{filtered.length} cédulas</span>
             </div>
+            {loading ? (
+              <div className="p-8 text-center text-slate-500">Carregando CPRs...</div>
+            ) : filtered.length === 0 ? (
+              <div className="p-8 text-center text-slate-500">Nenhuma CPR encontrada.</div>
+            ) : (
             <table className="w-full table-striped">
               <thead>
                 <tr className="border-b border-industrial-border bg-slate-900/50">
@@ -177,6 +227,7 @@ export default function CPRPage() {
                 </tr>
               </tfoot>
             </table>
+            )}
           </div>
 
           {/* Sidebar */}

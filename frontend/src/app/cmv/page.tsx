@@ -1,42 +1,152 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { MainContent } from '@/components/MainContent';
 import { PageHeader } from '@/components/PageHeader';
 import { usePrivacy } from '@/context/PrivacyContext';
+import { useGlobalFilter } from '@/context/GlobalFilterContext';
 import { cn } from '@/lib/utils';
 import {
   TrendingUp, Package, Tractor, HardHat, Warehouse, FileSpreadsheet,
-  GraduationCap, Truck, DollarSign, Target, ArrowRight
+  GraduationCap, Truck, DollarSign, Target, ArrowRight, Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Cell as PieCell
 } from 'recharts';
-
-// TODO: Populate from Supabase
-const costCategories: Array<{ key: string; label: string; icon: typeof Package; color: string; value: number }> = [];
-
-const culturaCMV: Array<{ cultura: string; insumos: number; servicos: number; maoDeObra: number; armazenagem: number; despesas: number; consultoria: number; frete: number }> = [];
-
-const dreIntegration: Array<{ label: string; value: number; indent: number; highlight?: boolean; accent?: boolean; pct?: boolean }> = [];
+import { getProductions, getAllCosts, ProductionRecord, CostRecord } from '@/lib/supabase/database';
 
 const cultureColors = ['#10b981', '#06b6d4', '#f59e0b', '#a855f7', '#ef4444'];
 
 export default function CMVPage() {
   const { isPrivate } = usePrivacy();
+  const { safra: filterSafra, fazenda: filterFazenda, cultura: filterCultura } = useGlobalFilter();
 
-  const cmvTotal = useMemo(() => costCategories.reduce((s, c) => s + c.value, 0), []);
+  const [costs, setCosts] = useState<CostRecord[]>([]);
+  const [productions, setProductions] = useState<ProductionRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [receitaBrutaGlobal, setReceitaBrutaGlobal] = useState(0);
 
-  const culturaTotals = useMemo(() => {
-    return culturaCMV.map(c => {
-      const total = c.insumos + c.servicos + c.maoDeObra + c.armazenagem + c.despesas + c.consultoria + c.frete;
-      return { ...c, total };
-    }).sort((a, b) => b.total - a.total);
+  useEffect(() => {
+    async function load() {
+      try {
+        setLoading(true);
+        const [allCosts, allProds] = await Promise.all([
+          getAllCosts(),
+          getProductions()
+        ]);
+        setCosts(allCosts);
+        setProductions(allProds);
+
+        // Calcula Receita Bruta Global mockada com defaultPrices (igual DRE) para usar nos KPIs (CMV/Receita)
+        let rb = 0;
+        allProds.forEach(p => {
+          const cName = (p.Cultura as any)?.name?.toLowerCase() || '';
+          let defaultPrice = 100;
+          if (cName.includes('soja')) defaultPrice = 120;
+          if (cName.includes('milho')) defaultPrice = 60;
+          if (cName.includes('algodão')) defaultPrice = 200;
+          rb += (p.totalProduction || 0) * defaultPrice;
+        });
+        setReceitaBrutaGlobal(rb);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
   }, []);
 
-  const pieData = culturaTotals.map((c, i) => ({
+  const { culturaTotals, costCategories, dreIntegration, cmvTotal, areaTotal } = useMemo(() => {
+    const cmvMap: Record<string, any> = {};
+    const catMap = {
+      insumos: 0,
+      servicos: 0,
+      maoDeObra: 0,
+      armazenagem: 0,
+      despesas: 0,
+      consultoria: 0,
+      frete: 0
+    };
+
+    let totalCMV = 0;
+
+    costs.forEach(c => {
+      const culturaInfo = c.Cultura as any;
+      const safraName = culturaInfo?.Safra?.year || 'Desconhecida';
+      const fazendaName = culturaInfo?.Safra?.Farm?.name || 'Desconhecida';
+      const culturaName = culturaInfo?.name || 'Geral';
+
+      if (filterSafra && safraName !== filterSafra) return;
+      if (filterFazenda && !fazendaName.includes(filterFazenda)) return;
+      if (filterCultura && culturaName !== filterCultura) return;
+
+      if (!cmvMap[culturaName]) {
+        cmvMap[culturaName] = { cultura: culturaName, insumos: 0, servicos: 0, maoDeObra: 0, armazenagem: 0, despesas: 0, consultoria: 0, frete: 0, total: 0 };
+      }
+
+      const costValue = c.items?.reduce((acc, i) => acc + (i.value || 0), 0) || 0;
+
+      // Agrupar
+      if (c.type === 'INSUMO') { cmvMap[culturaName].insumos += costValue; catMap.insumos += costValue; totalCMV += costValue; }
+      else if (c.type === 'MAO_DE_OBRA') { cmvMap[culturaName].maoDeObra += costValue; catMap.maoDeObra += costValue; totalCMV += costValue; }
+      else if (c.type === 'ARMAZENAGEM') { cmvMap[culturaName].armazenagem += costValue; catMap.armazenagem += costValue; totalCMV += costValue; }
+      // Outros caem fora do CMV produtivo, mas no mock do CMV page havia frete/despesas
+      else if (c.type === 'SERVICO') { cmvMap[culturaName].servicos += costValue; catMap.servicos += costValue; totalCMV += costValue; }
+      else if (c.type === 'CONSULTORIA') { cmvMap[culturaName].consultoria += costValue; catMap.consultoria += costValue; totalCMV += costValue; }
+      else if (c.type === 'FRETE') { cmvMap[culturaName].frete += costValue; catMap.frete += costValue; totalCMV += costValue; }
+      else {
+        // Despesas genéricas
+        cmvMap[culturaName].despesas += costValue; catMap.despesas += costValue; totalCMV += costValue;
+      }
+
+      cmvMap[culturaName].total += costValue;
+    });
+
+      const cTotals = Object.values(cmvMap).sort((a: any, b: any) => b.total - a.total);
+
+    let areaTotal = 0;
+    // Calculate areaTotal from productions matching filters
+    productions.forEach(p => {
+      const culturaInfo = p.Cultura as any;
+      const safraName = culturaInfo?.Safra?.year || 'Desconhecida';
+      const fazendaName = culturaInfo?.Safra?.Farm?.name || 'Desconhecida';
+      const culturaName = culturaInfo?.name || 'Geral';
+      if (filterSafra && safraName !== filterSafra) return;
+      if (filterFazenda && !fazendaName.includes(filterFazenda)) return;
+      if (filterCultura && culturaName !== filterCultura) return;
+      areaTotal += p.area || 0;
+    });
+
+    const cCategories = [
+      { key: 'insumos', label: 'Insumos / Químicos', icon: Package, color: '#10b981', value: catMap.insumos },
+      { key: 'servicos', label: 'Serv. Mecanizados', icon: Tractor, color: '#f59e0b', value: catMap.servicos },
+      { key: 'maoDeObra', label: 'Mão de Obra', icon: HardHat, color: '#3b82f6', value: catMap.maoDeObra },
+      { key: 'armazenagem', label: 'Armazenagem', icon: Warehouse, color: '#8b5cf6', value: catMap.armazenagem },
+      { key: 'despesas', label: 'Despesas Gerais', icon: FileSpreadsheet, color: '#64748b', value: catMap.despesas },
+      { key: 'consultoria', label: 'Consultoria', icon: GraduationCap, color: '#0ea5e9', value: catMap.consultoria },
+      { key: 'frete', label: 'Fretes', icon: Truck, color: '#ef4444', value: catMap.frete },
+    ].filter(c => c.value > 0);
+
+    const rb = receitaBrutaGlobal > 0 ? receitaBrutaGlobal : totalCMV * 1.5; // fallback
+    const lb = rb - totalCMV;
+    const dreInt = [
+      { label: 'Receita Bruta (Est.)', value: rb, indent: 0, highlight: true },
+      { label: '(-) CMV Total', value: -totalCMV, indent: 0, accent: true },
+      { label: '  ↳ Insumos', value: -catMap.insumos, indent: 1 },
+      { label: '  ↳ Serv. Mecanizados', value: -catMap.servicos, indent: 1 },
+      { label: '  ↳ Mão de Obra', value: -catMap.maoDeObra, indent: 1 },
+      { label: '  ↳ Outros', value: -(catMap.armazenagem + catMap.despesas + catMap.consultoria + catMap.frete), indent: 1 },
+      { label: 'Lucro Bruto', value: lb, indent: 0, highlight: true },
+      { label: 'Margem Bruta', value: lb / rb * 100, indent: 1, pct: true },
+    ];
+
+    return { culturaTotals: cTotals, costCategories: cCategories, dreIntegration: dreInt, cmvTotal: totalCMV, areaTotal };
+  }, [costs, productions, filterSafra, filterFazenda, filterCultura, receitaBrutaGlobal]);
+
+  const pieData = culturaTotals.map((c: any, i) => ({
     name: c.cultura, value: c.total, color: cultureColors[i % cultureColors.length],
   }));
 
@@ -44,6 +154,19 @@ export default function CMVPage() {
 
   const fmt = (v: number) => `R$ ${Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
   const fmtK = (v: number) => `R$ ${(v / 1000).toFixed(0)}k`;
+
+  if (loading) {
+    return (
+      <MainContent>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="flex flex-col items-center gap-4 text-slate-400">
+            <Loader2 size={32} className="animate-spin text-primary" />
+            <p>Calculando Custo da Mercadoria Vendida...</p>
+          </div>
+        </div>
+      </MainContent>
+    );
+  }
 
   return (
     <MainContent>
@@ -116,7 +239,7 @@ export default function CMVPage() {
             <div className="mt-4 pt-3 border-t border-primary/30">
               <div className="flex items-center gap-2 text-[10px] text-slate-500">
                 <Target size={12} className="text-primary-light" />
-                <span>CMV representa <strong className="text-white">{(cmvTotal / 12500000 * 100).toFixed(1)}%</strong> da Receita Bruta</span>
+                <span>CMV representa <strong className="text-white">{receitaBrutaGlobal > 0 ? (cmvTotal / receitaBrutaGlobal * 100).toFixed(1) : 0}%</strong> da Receita Bruta</span>
               </div>
             </div>
           </div>
@@ -230,9 +353,9 @@ export default function CMVPage() {
               <h4 className="font-bold uppercase tracking-tight text-sm mb-4">Indicadores</h4>
               <div className="space-y-3">
                 {[
-                  { label: 'CMV / Receita', value: `${(cmvTotal / 12500000 * 100).toFixed(1)}%`, desc: 'Eficiência operacional' },
-                  { label: 'CMV / Hectare', value: fmt(cmvTotal / 2800), desc: '2.800 ha plantados' },
-                  { label: 'Margem Bruta', value: `${((1 - cmvTotal / 11875000) * 100).toFixed(1)}%`, desc: 'Receita Líq. − CMV' },
+                  { label: 'CMV / Receita', value: `${receitaBrutaGlobal > 0 ? (cmvTotal / receitaBrutaGlobal * 100).toFixed(1) : 0}%`, desc: 'Eficiência operacional' },
+                  { label: 'CMV / Hectare', value: fmt(areaTotal > 0 ? cmvTotal / areaTotal : 0), desc: `${areaTotal.toLocaleString('pt-BR')} ha plantados` },
+                  { label: 'Margem Bruta', value: `${receitaBrutaGlobal > 0 ? ((1 - cmvTotal / receitaBrutaGlobal) * 100).toFixed(1) : 0}%`, desc: 'Receita Bruta − CMV' },
                 ].map(kpi => (
                   <div key={kpi.label}>
                     <div className="flex justify-between items-center mb-0.5">
