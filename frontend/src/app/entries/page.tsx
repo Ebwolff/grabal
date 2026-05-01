@@ -17,6 +17,7 @@ import {
   getProducers, getFarms, 
   createProduction, createCostWithItems, createAsset, 
   createLiability, createCPR, createGuarantee,
+  getProductions, getAllCosts, getLiabilities, getCPRs,
   type Producer, type Farm, type Safra, type Cultura 
 } from '@/lib/supabase/database';
 
@@ -68,14 +69,42 @@ function EntriesContent() {
   const [producers, setProducers] = useState<Producer[]>([]);
   const [farms, setFarms] = useState<Farm[]>([]);
   const [loadingContext, setLoadingContext] = useState(true);
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+
+  const loadData = async () => {
+    try {
+      const [pData, fData, prods, costs, liabs, cprs] = await Promise.all([
+        getProducers(), getFarms(),
+        getProductions(), getAllCosts(), getLiabilities(), getCPRs()
+      ]);
+      setProducers(pData);
+      setFarms(fData);
+
+      // Aggregating and sorting recent activities
+      const acts: any[] = [];
+      prods.forEach(p => acts.push({ type: 'producao', label: `Produção ${p.Cultura?.name || ''}`, val: `${p.totalProduction} sc`, date: p.createdAt, ts: new Date(p.createdAt).getTime() }));
+      costs.forEach(c => {
+        let t = 'custo';
+        if (c.type === 'MAO_DE_OBRA') t = 'servico'; // approximation for UI
+        if (c.type === 'DESPESA_ADM' || c.type === 'DESPESA_FINANCEIRA') t = 'despesa';
+        const label = c.items && c.items.length > 0 ? c.items[0].description : `Custo: ${c.type}`;
+        const totalVal = c.items ? c.items.reduce((acc: number, item: any) => acc + item.value, 0) : 0;
+        acts.push({ type: t, label: label, val: `R$ ${totalVal.toLocaleString('pt-BR')}`, date: c.createdAt, ts: new Date(c.createdAt).getTime() });
+      });
+      liabs.forEach(l => acts.push({ type: 'passivo', label: `Dívida: ${l.creditor}`, val: `R$ ${l.value.toLocaleString('pt-BR')}`, date: l.createdAt, ts: new Date(l.createdAt).getTime() }));
+      cprs.forEach(c => acts.push({ type: 'cpr', label: `CPR ${c.cultura}`, val: `R$ ${c.value.toLocaleString('pt-BR')}`, date: c.createdAt, ts: new Date(c.createdAt).getTime() }));
+
+      acts.sort((a, b) => b.ts - a.ts);
+      setRecentActivities(acts.slice(0, 5));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingContext(false);
+    }
+  };
 
   useEffect(() => {
-    Promise.all([getProducers(), getFarms()])
-      .then(([pData, fData]) => {
-        setProducers(pData);
-        setFarms(fData);
-      })
-      .finally(() => setLoadingContext(false));
+    loadData();
   }, []);
 
   // Unified Form State
@@ -213,7 +242,8 @@ function EntriesContent() {
 
       setSubmitStatus('success');
       toastSuccess(`${activeType.label} registrado com sucesso!`);
-      
+      loadData();
+
       // Reset form
       setTimeout(() => {
         setSubmitStatus('idle');
@@ -521,13 +551,11 @@ function EntriesContent() {
             </div>
 
             <div className="space-y-4">
-              {[
-                { type: 'producao', label: 'Colheita Soja', val: '4.200 sc', date: 'Hoje, 09:12' },
-                { type: 'despesa', label: 'Energia Elétrica', val: 'R$ 12.400', date: 'Ontem, 16:45' },
-                { type: 'servico', label: 'Pulverização', val: 'R$ 8.500', date: '25 Abr, 10:20' },
-                { type: 'ativo', label: 'Trator Case IH', val: 'R$ 850.000', date: '24 Abr, 14:00' },
-              ].map((item, i) => {
-                const typeInfo = entryTypes.find(t => t.id === item.type)!;
+              {recentActivities.length === 0 && (
+                <div className="text-center text-slate-500 text-xs py-10">Nenhuma atividade recente.</div>
+              )}
+              {recentActivities.map((item, i) => {
+                const typeInfo = entryTypes.find(t => t.id === item.type) || entryTypes[0];
                 return (
                   <motion.div 
                     key={i} 
@@ -542,7 +570,7 @@ function EntriesContent() {
                       </div>
                       <div>
                         <p className="text-xs font-bold text-slate-200">{item.label}</p>
-                        <p className="text-[9px] text-slate-600 font-medium">{item.date}</p>
+                        <p className="text-[9px] text-slate-600 font-medium">{new Date(item.date).toLocaleDateString('pt-BR')} {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
                       </div>
                     </div>
                     <div className="text-right">

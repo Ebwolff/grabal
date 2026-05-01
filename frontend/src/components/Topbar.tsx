@@ -3,13 +3,13 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Bell, ChevronDown, Filter, Wheat } from 'lucide-react';
 import { useSidebar } from '@/context/SidebarContext';
-import { useGlobalFilter, safrasOptions, fazendasOptions, culturasOptions } from '@/context/GlobalFilterContext';
+import { useGlobalFilter } from '@/context/GlobalFilterContext';
 import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 
 export function Topbar() {
   const { collapsed } = useSidebar();
-  const { safra, setSafra, fazenda, setFazenda, cultura, setCultura } = useGlobalFilter();
+  const { safra, setSafra, fazenda, setFazenda, cultura, setCultura, safrasOptions, fazendasOptions, culturasOptions } = useGlobalFilter();
   const [user, setUser] = useState<{ name: string, initials: string } | null>(null);
   const supabase = createClient();
 

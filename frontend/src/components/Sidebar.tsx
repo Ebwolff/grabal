@@ -31,6 +31,13 @@ const menuGroups: MenuGroup[] = [
     ]
   },
   {
+    label: 'Cadastros',
+    items: [
+      { name: 'Clientes', href: '/producers', icon: Users },
+      { name: 'Fazendas', href: '/farms', icon: Sprout },
+    ]
+  },
+  {
     label: 'Operacional',
     items: [
       { name: 'Produção', href: '/production', icon: Wheat },
