@@ -1,14 +1,38 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, Bell, ChevronDown, Filter, Wheat } from 'lucide-react';
 import { useSidebar } from '@/context/SidebarContext';
 import { useGlobalFilter, safrasOptions, fazendasOptions, culturasOptions } from '@/context/GlobalFilterContext';
 import { motion } from 'framer-motion';
+import { createClient } from '@/lib/supabase/client';
 
 export function Topbar() {
   const { collapsed } = useSidebar();
   const { safra, setSafra, fazenda, setFazenda, cultura, setCultura } = useGlobalFilter();
+  const [user, setUser] = useState<{ name: string, initials: string } | null>(null);
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function loadUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const fullName = user.user_metadata?.full_name || user.email || 'Analista';
+        const nameParts = fullName.split(' ');
+        
+        // Determina as iniciais (ex: "Diego Mesquita" -> "DM", "diego@..." -> "DI")
+        let initials = '..';
+        if (nameParts.length > 1 && nameParts[0].length > 0 && nameParts[1].length > 0) {
+          initials = `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase();
+        } else if (fullName.length > 1) {
+          initials = fullName.substring(0, 2).toUpperCase();
+        }
+
+        setUser({ name: fullName, initials });
+      }
+    }
+    loadUser();
+  }, []);
 
   return (
     <motion.header
@@ -47,11 +71,13 @@ export function Topbar() {
 
         <button className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-surface-hover transition-colors">
           <div className="w-7 h-7 rounded-full bg-primary/30 flex items-center justify-center border border-primary-light/30">
-            <span className="text-[10px] font-bold text-primary-light">DM</span>
+            <span className="text-[10px] font-bold text-primary-light">{user ? user.initials : '..'}</span>
           </div>
           <div className="text-left hidden lg:block">
-            <p className="text-[11px] font-medium text-white leading-tight">Diego Mesquita</p>
-            <p className="text-[9px] text-slate-500">Administrador</p>
+            <p className="text-[11px] font-medium text-white leading-tight">
+              {user ? user.name : 'Carregando...'}
+            </p>
+            <p className="text-[9px] text-slate-500">Logado</p>
           </div>
           <ChevronDown size={12} className="text-slate-500 hidden lg:block" />
         </button>
