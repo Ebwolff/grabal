@@ -185,6 +185,7 @@ model CPR {
   cultura             String
   committedVolume     Float
   value               Float
+  buyer               String?
   dueDate             DateTime
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt

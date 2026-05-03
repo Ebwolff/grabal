@@ -82,7 +82,7 @@ export default function CPRPage() {
           unidade: 'sc', // default
           valor: c.value || 0,
           vencimento: dueDate.toLocaleDateString('pt-BR'),
-          comprador: 'Comprador Genérico', // Add buyer to schema if needed
+          comprador: c.buyer || 'Não Informado',
           status,
         };
       });

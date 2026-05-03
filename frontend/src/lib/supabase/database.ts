@@ -92,6 +92,7 @@ export interface CPR {
   cultura: string
   committedVolume: number
   value: number
+  buyer: string | null
   dueDate: string
   createdAt: string
   updatedAt: string
@@ -372,3 +373,29 @@ export async function deleteCost(id: string): Promise<void> {
   if (error) throw error
 }
 
+// Sales
+export interface Sale {
+  id: string;
+  culturaId: string;
+  unitPrice: number;
+  volumeSold: number;
+  grossRevenue: number;
+  createdAt: string;
+  updatedAt: string;
+  Cultura?: any;
+}
+
+export async function getSales(): Promise<Sale[]> {
+  const { data, error } = await supabase()
+    .from('Sale')
+    .select('*, Cultura(name, safraId, Safra(year, description, farmId, Farm(name)))')
+    .order('createdAt', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
+export async function createSale(sale: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'Cultura'>): Promise<Sale> {
+  const { data, error } = await supabase().from('Sale').insert(sale).select().single()
+  if (error) throw error
+  return data
+}

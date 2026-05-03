@@ -208,7 +208,7 @@ function EntriesContent() {
           break;
         case 'cpr':
           endpoint = 'cprs';
-          payload = { farmId: form.farmId, cultura: activeFarm?.safras?.find((s:any) => s.id === form.safraId)?.culturas?.find((c:any) => c.id === form.culturaId)?.name || 'Geral', committedVolume: parseFloat(form.volume) || 0, value: basePayload.value, dueDate: new Date(form.dueDate).toISOString() };
+          payload = { farmId: form.farmId, cultura: activeFarm?.safras?.find((s:any) => s.id === form.safraId)?.culturas?.find((c:any) => c.id === form.culturaId)?.name || 'Geral', committedVolume: parseFloat(form.volume) || 0, value: basePayload.value, buyer: form.comprador, dueDate: new Date(form.dueDate).toISOString() };
           break;
         case 'garantia':
           endpoint = 'guarantees';

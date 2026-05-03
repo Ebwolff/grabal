@@ -17,7 +17,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie
 } from 'recharts';
-import { getProductions, getAllCosts, getLiabilities, ProductionRecord, CostRecord, Liability } from '@/lib/supabase/database';
+import { getProductions, getAllCosts, getLiabilities, getSales, ProductionRecord, CostRecord, Liability, Sale } from '@/lib/supabase/database';
 
 function CustomTooltipDonut({ active, payload }: any) {
   if (!active || !payload?.length) return null;
@@ -39,20 +39,23 @@ export default function ExecutiveDashboard() {
   const [productions, setProductions] = useState<ProductionRecord[]>([]);
   const [costs, setCosts] = useState<CostRecord[]>([]);
   const [liabilities, setLiabilities] = useState<Liability[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
         setLoading(true);
-        const [p, c, l] = await Promise.all([
+        const [p, c, l, s] = await Promise.all([
           getProductions(),
           getAllCosts(),
-          getLiabilities()
+          getLiabilities(),
+          getSales()
         ]);
         setProductions(p);
         setCosts(c);
         setLiabilities(l);
+        setSales(s);
       } catch (err) {
         console.error(err);
       } finally {
@@ -86,19 +89,25 @@ export default function ExecutiveDashboard() {
 
       producaoTotal += p.totalProduction || 0;
       prodCultMap[culturaName] = (prodCultMap[culturaName] || 0) + (p.totalProduction || 0);
+    });
 
-      let defaultPrice = 100;
-      if (culturaName.toLowerCase().includes('soja')) defaultPrice = 120;
-      if (culturaName.toLowerCase().includes('milho')) defaultPrice = 60;
-      if (culturaName.toLowerCase().includes('algodão')) defaultPrice = 200;
+    sales.forEach(s => {
+      const culturaInfo = s.Cultura as any;
+      const safraName = culturaInfo?.Safra?.year || 'Desconhecida';
+      const fazendaName = culturaInfo?.Safra?.Farm?.name || 'Desconhecida';
+      const culturaName = culturaInfo?.name || 'Outros';
 
-      const receitaDaCultura = (p.totalProduction || 0) * defaultPrice;
-      receita += receitaDaCultura;
+      if (filterSafra && safraName !== filterSafra) return;
+      if (filterFazenda && !fazendaName.includes(filterFazenda)) return;
+      if (filterCultura && culturaName !== filterCultura) return;
 
-      // Distribuindo a receita na janela de Julho-Novembro (venda) aleatoriamente/fictício
-      const distMonths = ['Jul', 'Ago', 'Set', 'Out', 'Nov'];
-      const slice = receitaDaCultura / distMonths.length;
-      distMonths.forEach(m => monthMap[m].receita += slice);
+      receita += s.grossRevenue || 0;
+
+      const date = new Date(s.createdAt || Date.now());
+      const mIdx = date.getMonth();
+      if (months[mIdx]) {
+        monthMap[months[mIdx]].receita += (s.grossRevenue || 0);
+      }
     });
 
     costs.forEach(c => {
@@ -162,7 +171,7 @@ export default function ExecutiveDashboard() {
     ];
 
     return { receita, custo, lucro: receita - custo, producaoTotal, ebitda, endividamentoArr, monthlyData, producaoCultura, custosCat, totalEndividamento: endividamento };
-  }, [productions, costs, liabilities, filterSafra, filterFazenda, filterCultura]);
+  }, [productions, costs, liabilities, sales, filterSafra, filterFazenda, filterCultura]);
 
   const fmtM = (v: number) => `R$ ${(Math.abs(v) / 1000000).toFixed(1)}M`;
   const fmt = (v: number) => `R$ ${Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;

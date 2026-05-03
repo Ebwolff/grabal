@@ -51,11 +51,21 @@ export default function StoragePage() {
       const costs = await getCostsByType('ARMAZENAGEM');
       const mapped: Armazenagem[] = costs.flatMap(c => {
         return (c.items || []).map((item: any) => {
-          // Expected description format: "proprio | 1000 | Descrição do Armazém"
-          const parts = item.description.split(' | ');
-          const tipo = (parts[0]?.toLowerCase() === 'terceiro' ? 'terceiro' : 'proprio') as 'proprio' | 'terceiro';
-          const capacidade = parseInt(parts[1]) || 0;
-          const descricao = parts[2] || item.description;
+          const descString = item.description || '';
+          let tipo: 'proprio' | 'terceiro' = 'proprio';
+          let capacidade = 0;
+          let descricao = descString;
+
+          if (descString.includes(' | ')) {
+            const parts = descString.split(' | ').map((p: string) => p.trim());
+            tipo = (parts[0]?.toLowerCase() === 'terceiro' ? 'terceiro' : 'proprio');
+            capacidade = parseInt(parts[1]) || 0;
+            // If there's a third part, use it, else keep the original string just in case
+            descricao = parts.slice(2).join(' | ') || descString;
+          } else {
+            // Fallback heuristics
+            if (descString.toLowerCase().includes('terceiro')) tipo = 'terceiro';
+          }
 
           return {
             id: item.id,
