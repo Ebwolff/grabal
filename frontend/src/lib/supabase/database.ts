@@ -144,13 +144,13 @@ export async function getProducers(): Promise<Producer[]> {
 }
 
 export async function createProducer(producer: Omit<Producer, 'id' | 'createdAt' | 'updatedAt'>): Promise<Producer> {
-  const { data, error } = await supabase().from('Producer').insert({ id: crypto.randomUUID(), ...producer }).select().single()
+  const { data, error } = await supabase().from('Producer').insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), ...producer }).select().single()
   if (error) throw error
   return data
 }
 
 export async function updateProducer(id: string, producer: Partial<Omit<Producer, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Producer> {
-  const { data, error } = await supabase().from('Producer').update(producer).eq('id', id).select().single()
+  const { data, error } = await supabase().from('Producer').update({ updatedAt: new Date().toISOString(), ...producer }).eq('id', id).select().single()
   if (error) throw error
   return data
 }
@@ -180,7 +180,7 @@ export async function getFarmsSimple(): Promise<Farm[]> {
 }
 
 export async function createFarm(farm: Omit<Farm, 'id' | 'createdAt' | 'updatedAt' | 'producer' | 'safras'>): Promise<Farm> {
-  const { data, error } = await supabase().from('Farm').insert({ id: crypto.randomUUID(), ...farm }).select().single()
+  const { data, error } = await supabase().from('Farm').insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), ...farm }).select().single()
   if (error) throw error
   return data
 }
@@ -200,7 +200,7 @@ export async function getSafras(farmId?: string): Promise<Safra[]> {
 }
 
 export async function createSafra(safra: Omit<Safra, 'id' | 'createdAt' | 'updatedAt' | 'culturas'>): Promise<Safra> {
-  const { data, error } = await supabase().from('Safra').insert({ id: crypto.randomUUID(), ...safra }).select().single()
+  const { data, error } = await supabase().from('Safra').insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), ...safra }).select().single()
   if (error) throw error
   return data
 }
@@ -220,7 +220,7 @@ export async function getCulturas(safraId?: string): Promise<Cultura[]> {
 }
 
 export async function createCultura(cultura: Omit<Cultura, 'id' | 'createdAt' | 'updatedAt'>): Promise<Cultura> {
-  const { data, error } = await supabase().from('Cultura').insert({ id: crypto.randomUUID(), ...cultura }).select().single()
+  const { data, error } = await supabase().from('Cultura').insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), ...cultura }).select().single()
   if (error) throw error
   return data
 }
@@ -235,7 +235,7 @@ export async function getAssets(farmId?: string): Promise<Asset[]> {
 }
 
 export async function createAsset(asset: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>): Promise<Asset> {
-  const { data, error } = await supabase().from('Asset').insert({ id: crypto.randomUUID(), ...asset }).select().single()
+  const { data, error } = await supabase().from('Asset').insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), ...asset }).select().single()
   if (error) throw error
   return data
 }
@@ -250,7 +250,7 @@ export async function getLiabilities(farmId?: string): Promise<Liability[]> {
 }
 
 export async function createLiability(liability: Omit<Liability, 'id' | 'createdAt' | 'updatedAt'>): Promise<Liability> {
-  const { data, error } = await supabase().from('Liability').insert({ id: crypto.randomUUID(), ...liability }).select().single()
+  const { data, error } = await supabase().from('Liability').insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), ...liability }).select().single()
   if (error) throw error
   return data
 }
@@ -265,13 +265,13 @@ export async function getCPRs(farmId?: string): Promise<CPR[]> {
 }
 
 export async function createCPR(cpr: Omit<CPR, 'id' | 'createdAt' | 'updatedAt'>): Promise<CPR> {
-  const { data, error } = await supabase().from('CPR').insert({ id: crypto.randomUUID(), ...cpr }).select().single()
+  const { data, error } = await supabase().from('CPR').insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), ...cpr }).select().single()
   if (error) throw error
   return data
 }
 
 export async function updateCPR(id: string, cpr: Partial<Omit<CPR, 'id' | 'createdAt' | 'updatedAt'>>): Promise<CPR> {
-  const { data, error } = await supabase().from('CPR').update(cpr).eq('id', id).select().single()
+  const { data, error } = await supabase().from('CPR').update({ updatedAt: new Date().toISOString(), ...cpr }).eq('id', id).select().single()
   if (error) throw error
   return data
 }
@@ -291,7 +291,7 @@ export async function getGuarantees(farmId?: string): Promise<Guarantee[]> {
 }
 
 export async function createGuarantee(guarantee: Omit<Guarantee, 'id' | 'createdAt' | 'updatedAt'>): Promise<Guarantee> {
-  const { data, error } = await supabase().from('Guarantee').insert({ id: crypto.randomUUID(), ...guarantee }).select().single()
+  const { data, error } = await supabase().from('Guarantee').insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), ...guarantee }).select().single()
   if (error) throw error
   return data
 }
@@ -307,13 +307,13 @@ export async function getProductions(): Promise<ProductionRecord[]> {
 }
 
 export async function createProduction(production: Omit<ProductionRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<ProductionRecord> {
-  const { data, error } = await supabase().from('Production').insert({ id: crypto.randomUUID(), ...production }).select().single()
+  const { data, error } = await supabase().from('Production').insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), ...production }).select().single()
   if (error) throw error
   return data
 }
 
 export async function updateProduction(id: string, production: Partial<Omit<ProductionRecord, 'id' | 'createdAt' | 'updatedAt'>>): Promise<ProductionRecord> {
-  const { data, error } = await supabase().from('Production').update(production).eq('id', id).select().single()
+  const { data, error } = await supabase().from('Production').update({ updatedAt: new Date().toISOString(), ...production }).eq('id', id).select().single()
   if (error) throw error
   return data
 }
@@ -347,12 +347,12 @@ export async function createCostWithItems(
   cost: Omit<CostRecord, 'id' | 'createdAt' | 'updatedAt' | 'items'>,
   items: Omit<CostItem, 'id' | 'costId' | 'createdAt' | 'updatedAt'>[]
 ): Promise<CostRecord> {
-  const { data: costData, error: costError } = await supabase().from('Cost').insert({ id: crypto.randomUUID(), ...cost }).select().single()
+  const { data: costData, error: costError } = await supabase().from('Cost').insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), ...cost }).select().single()
   if (costError) throw costError
 
   if (items.length > 0) {
     const itemsWithCostId = items.map(item => ({ ...item, costId: costData.id }))
-    const { error: itemsError } = await supabase().from('CostItem').insert({ id: crypto.randomUUID(), ...itemsWithCostId })
+    const { error: itemsError } = await supabase().from('CostItem').insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), ...itemsWithCostId })
     if (itemsError) throw itemsError
   }
 
@@ -360,7 +360,7 @@ export async function createCostWithItems(
 }
 
 export async function updateCost(id: string, cost: Partial<Omit<CostRecord, 'id' | 'createdAt' | 'updatedAt' | 'items'>>): Promise<CostRecord> {
-  const { data, error } = await supabase().from('Cost').update(cost).eq('id', id).select().single()
+  const { data, error } = await supabase().from('Cost').update({ updatedAt: new Date().toISOString(), ...cost }).eq('id', id).select().single()
   if (error) throw error
   return data
 }
@@ -395,7 +395,7 @@ export async function getSales(): Promise<Sale[]> {
 }
 
 export async function createSale(sale: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'Cultura'>): Promise<Sale> {
-  const { data, error } = await supabase().from('Sale').insert({ id: crypto.randomUUID(), ...sale }).select().single()
+  const { data, error } = await supabase().from('Sale').insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), ...sale }).select().single()
   if (error) throw error
   return data
 }
