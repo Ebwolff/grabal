@@ -14,18 +14,41 @@ const recentImports = [
   { file: 'ativos_fazenda_rioDoce.csv', date: '12/03/2026 11:03', records: 52, status: 'success' },
 ];
 
-const dataModels = [
-  { name: 'Produtores', records: 1240, lastSync: '16/03 14:22', icon: '👤' },
-  { name: 'Fazendas', records: 48, lastSync: '16/03 14:22', icon: '🏡' },
-  { name: 'Safras', records: 96, lastSync: '15/03 09:15', icon: '🌱' },
-  { name: 'Culturas', records: 312, lastSync: '15/03 09:15', icon: '🌾' },
-  { name: 'Produção', records: 2480, lastSync: '14/03 18:40', icon: '📊' },
-  { name: 'Custos', records: 8640, lastSync: '14/03 18:40', icon: '💰' },
-  { name: 'Receitas', records: 1856, lastSync: '14/03 18:40', icon: '📈' },
-  { name: 'Ativos', records: 624, lastSync: '12/03 11:03', icon: '🏗️' },
-];
+import { createClient } from '@/lib/supabase/client';
 
 export default function DatabasePage() {
+  const [stats, setStats] = React.useState([
+    { name: 'Produtores', records: 0, icon: '👤', table: 'Client' },
+    { name: 'Fazendas', records: 0, icon: '🏡', table: 'Farm' },
+    { name: 'Safras', records: 0, icon: '🌱', table: 'Safra' },
+    { name: 'Culturas', records: 0, icon: '🌾', table: 'Cultura' },
+    { name: 'Produção', records: 0, icon: '📊', table: 'Production' },
+    { name: 'Custos', records: 0, icon: '💰', table: 'Cost' },
+    { name: 'Receitas', records: 0, icon: '📈', table: 'Sale' },
+    { name: 'Ativos', records: 0, icon: '🏗️', table: 'Asset' },
+  ]);
+  const [loading, setLoading] = React.useState(true);
+  const [imports, setImports] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    async function loadStats() {
+      const supabase = createClient();
+      setLoading(true);
+      try {
+        const newStats = [...stats];
+        for (let i = 0; i < newStats.length; i++) {
+          const { count } = await supabase.from(newStats[i].table).select('*', { count: 'exact', head: true });
+          newStats[i].records = count || 0;
+        }
+        setStats(newStats);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadStats();
+  }, []);
   return (
     <MainContent>
         <PageHeader
@@ -74,7 +97,7 @@ export default function DatabasePage() {
           <div className="col-span-2">
             <h4 className="font-bold uppercase tracking-tight mb-4 text-sm">Modelos de Dados</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {dataModels.map((model, i) => (
+              {stats.map((model, i) => (
                 <motion.div
                   key={model.name}
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -84,9 +107,11 @@ export default function DatabasePage() {
                 >
                   <div className="text-2xl mb-2">{model.icon}</div>
                   <p className="font-bold text-sm group-hover:text-primary-light transition-colors">{model.name}</p>
-                  <p className="text-lg font-bold text-white mt-1">{model.records.toLocaleString()}</p>
+                  <p className="text-lg font-bold text-white mt-1">
+                    {loading ? <span className="animate-pulse text-slate-500">...</span> : model.records.toLocaleString()}
+                  </p>
                   <p className="text-[10px] text-slate-600 mt-1 flex items-center gap-1">
-                    <Clock size={8} /> {model.lastSync}
+                    <Clock size={8} /> Hoje
                   </p>
                 </motion.div>
               ))}
@@ -97,31 +122,37 @@ export default function DatabasePage() {
           <div>
             <h4 className="font-bold uppercase tracking-tight mb-4 text-sm">Importações Recentes</h4>
             <div className="card overflow-hidden">
-              {recentImports.map((imp, i) => (
-                <motion.div
-                  key={imp.file}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="p-4 border-b border-industrial-border/50 last:border-b-0 hover:bg-slate-800/30 transition-colors"
-                >
-                  <div className="flex items-start justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <FileSpreadsheet size={14} className="text-emerald-500" />
-                      <span className="text-xs font-bold truncate max-w-[160px]">{imp.file}</span>
+              {imports.length === 0 ? (
+                <div className="p-8 text-center text-slate-500 text-xs">
+                  Nenhuma importação recente encontrada.
+                </div>
+              ) : (
+                imports.map((imp, i) => (
+                  <motion.div
+                    key={imp.file}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="p-4 border-b border-industrial-border/50 last:border-b-0 hover:bg-slate-800/30 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <FileSpreadsheet size={14} className="text-emerald-500" />
+                        <span className="text-xs font-bold truncate max-w-[160px]">{imp.file}</span>
+                      </div>
+                      {imp.status === 'success' ? (
+                        <CheckCircle2 size={14} className="text-emerald-400" />
+                      ) : (
+                        <AlertTriangle size={14} className="text-orange-400" />
+                      )}
                     </div>
-                    {imp.status === 'success' ? (
-                      <CheckCircle2 size={14} className="text-emerald-400" />
-                    ) : (
-                      <AlertTriangle size={14} className="text-orange-400" />
-                    )}
-                  </div>
-                  <div className="flex justify-between text-[10px] text-slate-600">
-                    <span>{imp.date}</span>
-                    <span>{imp.records} registros</span>
-                  </div>
-                </motion.div>
-              ))}
+                    <div className="flex justify-between text-[10px] text-slate-600">
+                      <span>{imp.date}</span>
+                      <span>{imp.records} registros</span>
+                    </div>
+                  </motion.div>
+                ))
+              )}
             </div>
           </div>
         </div>
