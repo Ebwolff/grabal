@@ -101,6 +101,61 @@ export default function ProductionPage() {
       .sort((a, b) => b.total - a.total);
   }, [filtered]);
 
+  const variationData = useMemo(() => {
+    if (data.length === 0) return [];
+    
+    const allSafras = Array.from(new Set(data.map(d => d.safra))).sort().reverse();
+    if (allSafras.length === 0) return [];
+
+    const currentSafraStr = safra || allSafras[0];
+    const currentIndex = allSafras.indexOf(currentSafraStr);
+    
+    if (currentIndex === -1 || currentIndex === allSafras.length - 1) return [];
+    
+    const previousSafraStr = allSafras[currentIndex + 1];
+
+    const currentData = data.filter(d => d.safra === currentSafraStr && (!fazenda || d.fazenda.includes(fazenda)));
+    const previousData = data.filter(d => d.safra === previousSafraStr && (!fazenda || d.fazenda.includes(fazenda)));
+
+    const cultures = Array.from(new Set(currentData.map(d => d.cultura)));
+    
+    return cultures.map(cult => {
+      const currProds = currentData.filter(d => d.cultura === cult);
+      const prevProds = previousData.filter(d => d.cultura === cult);
+
+      const avgCurr = currProds.length > 0 ? currProds.reduce((s, d) => s + d.produtividade, 0) / currProds.length : 0;
+      const avgPrev = prevProds.length > 0 ? prevProds.reduce((s, d) => s + d.produtividade, 0) / prevProds.length : 0;
+
+      return { cultura: cult, atual: avgCurr, anterior: avgPrev, unit: 'sc/ha' };
+    }).filter(comp => comp.atual > 0 && comp.anterior > 0);
+  }, [data, safra, fazenda]);
+
+  const kpiVariation = useMemo(() => {
+    if (data.length === 0) return { producao: 0, produtividade: 0 };
+    
+    const allSafras = Array.from(new Set(data.map(d => d.safra))).sort().reverse();
+    const currentSafraStr = safra || allSafras[0];
+    const currentIndex = allSafras.indexOf(currentSafraStr);
+    
+    if (currentIndex === -1 || currentIndex === allSafras.length - 1) return { producao: 0, produtividade: 0 };
+    
+    const previousSafraStr = allSafras[currentIndex + 1];
+
+    const currentData = data.filter(d => d.safra === currentSafraStr && (!fazenda || d.fazenda.includes(fazenda)));
+    const previousData = data.filter(d => d.safra === previousSafraStr && (!fazenda || d.fazenda.includes(fazenda)));
+
+    const currProdTotal = currentData.reduce((s, d) => s + d.producaoTotal, 0);
+    const prevProdTotal = previousData.reduce((s, d) => s + d.producaoTotal, 0);
+    
+    const currProdMedia = currentData.length > 0 ? currentData.reduce((s, d) => s + d.produtividade, 0) / currentData.length : 0;
+    const prevProdMedia = previousData.length > 0 ? previousData.reduce((s, d) => s + d.produtividade, 0) / previousData.length : 0;
+
+    const varProducao = prevProdTotal > 0 ? ((currProdTotal - prevProdTotal) / prevProdTotal) * 100 : 0;
+    const varProdutividade = prevProdMedia > 0 ? ((currProdMedia - prevProdMedia) / prevProdMedia) * 100 : 0;
+
+    return { producao: varProducao, produtividade: varProdutividade };
+  }, [data, safra, fazenda]);
+
   const startEdit = (item: ProducaoItem) => {
     setEditingId(item.id);
     setEditValues({ areaPlantada: item.areaPlantada.toString(), produtividade: item.produtividade.toString() });
@@ -156,8 +211,8 @@ export default function ProductionPage() {
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <MetricCard title="Área Total" value={`${totals.area.toLocaleString('pt-BR')} ha`} icon={MapPin} accentColor="#3B82F6" />
-        <MetricCard title="Produção Total" value={`${(totals.producao / 1000).toFixed(1)}K sc`} change={11.8} icon={Wheat} accentColor="#10B981" changeLabel="vs safra anterior" />
-        <MetricCard title="Produtividade Média" value={`${totals.prodMedia.toFixed(1)} sc/ha`} change={3.2} icon={Sprout} accentColor="#F59E0B" />
+        <MetricCard title="Produção Total" value={`${(totals.producao / 1000).toFixed(1)}K sc`} change={kpiVariation.producao} icon={Wheat} accentColor="#10B981" changeLabel="vs safra anterior" />
+        <MetricCard title="Produtividade Média" value={`${totals.prodMedia.toFixed(1)} sc/ha`} change={kpiVariation.produtividade} icon={Sprout} accentColor="#F59E0B" />
         <MetricCard title="Culturas Ativas" value={totals.culturas.toString()} icon={BarChart3} accentColor="#3B82F6" />
       </div>
 
@@ -284,31 +339,33 @@ export default function ProductionPage() {
           <div className="card p-5">
             <h4 className="text-sm font-semibold text-white mb-4">Variação vs Safra Anterior</h4>
             <div className="space-y-3">
-              {[
-                { cultura: 'Soja', atual: 60, anterior: 65, unit: 'sc/ha' },
-                { cultura: 'Milho', atual: 180, anterior: 175, unit: 'sc/ha' },
-                { cultura: 'Café', atual: 42, anterior: 40, unit: 'sc/ha' },
-              ].map((comp) => {
-                const diff = ((comp.atual - comp.anterior) / comp.anterior * 100);
-                const positive = diff >= 0;
-                return (
-                  <div key={comp.cultura} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cultureColors[comp.cultura] || '#64748b' }} />
-                      <span className="text-xs font-semibold text-white">{comp.cultura}</span>
+              {variationData.length === 0 ? (
+                <p className="text-[10px] text-slate-500 italic text-center py-4">
+                  Dados insuficientes para comparação de safras.
+                </p>
+              ) : (
+                variationData.map((comp) => {
+                  const diff = ((comp.atual - comp.anterior) / comp.anterior * 100);
+                  const positive = diff >= 0;
+                  return (
+                    <div key={comp.cultura} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cultureColors[comp.cultura] || '#64748b' }} />
+                        <span className="text-xs font-semibold text-white">{comp.cultura}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className={cn('text-xs font-mono privacy-mask', isPrivate && 'privacy-hidden')}>
+                          {comp.atual.toFixed(1)} {comp.unit}
+                        </span>
+                        <span className={cn('text-[10px] font-semibold flex items-center gap-0.5', positive ? 'text-success' : 'text-danger')}>
+                          {positive ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                          {positive ? '+' : ''}{diff.toFixed(1)}%
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className={cn('text-xs font-mono privacy-mask', isPrivate && 'privacy-hidden')}>
-                        {comp.atual} {comp.unit}
-                      </span>
-                      <span className={cn('text-[10px] font-semibold flex items-center gap-0.5', positive ? 'text-success' : 'text-danger')}>
-                        {positive ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-                        {positive ? '+' : ''}{diff.toFixed(1)}%
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
 
