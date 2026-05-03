@@ -164,7 +164,7 @@ export async function deleteProducer(id: string): Promise<void> {
 export async function getFarms(): Promise<Farm[]> {
   const { data, error } = await supabase()
     .from('Farm')
-    .select('*, Safra(*)')
+    .select('*, safras:Safra(*, culturas:Cultura(*))')
     .order('createdAt', { ascending: false })
   if (error) throw error
   return data || []
@@ -192,7 +192,7 @@ export async function deleteFarm(id: string): Promise<void> {
 
 // Safra
 export async function getSafras(farmId?: string): Promise<Safra[]> {
-  let query = supabase().from('Safra').select('*, Cultura:id(*)').order('year', { ascending: false })
+  let query = supabase().from('Safra').select('*, culturas:Cultura(*)').order('year', { ascending: false })
   if (farmId) query = query.eq('farmId', farmId)
   const { data, error } = await query
   if (error) throw error
