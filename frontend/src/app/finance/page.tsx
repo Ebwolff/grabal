@@ -200,12 +200,12 @@ export default function FinancePage() {
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-        <MetricCard title="Margem EBITDA" value={`${data.kpis.margemEbitda}%`} change={0} icon={Activity} accentColor="#3B82F6" changeLabel="vs safra anterior" />
-        <MetricCard title="Liquidez Corrente" value={data.kpis.liquidez} change={0} icon={RefreshCw} accentColor="#10B981" changeLabel="vs safra anterior" />
-        <MetricCard title="Endividamento" value={`${data.kpis.endividamento}%`} change={0} icon={TrendingDown} accentColor="#10B981" changeLabel="" />
-        <MetricCard title="ROE" value={`${data.kpis.roe}%`} change={0} invertChange icon={Percent} accentColor="#EF4444" changeLabel="vs safra anterior" />
-        <MetricCard title="Margem Líquida" value={`${data.kpis.margemLiquida}%`} change={0} icon={TrendingUp} accentColor="#3B82F6" changeLabel="vs safra anterior" />
-        <MetricCard title="Giro do Ativo" value={data.kpis.giroAtivo} change={0} icon={BarChart3} accentColor="#10B981" changeLabel="vs safra anterior" />
+        <MetricCard title="Margem EBITDA" value={`${data.kpis.margemEbitda}%`} icon={Activity} accentColor="#3B82F6" />
+        <MetricCard title="Liquidez Corrente" value={data.kpis.liquidez} icon={RefreshCw} accentColor="#10B981" />
+        <MetricCard title="Endividamento" value={`${data.kpis.endividamento}%`} icon={TrendingDown} accentColor="#10B981" />
+        <MetricCard title="ROE" value={`${data.kpis.roe}%`} icon={Percent} accentColor="#EF4444" />
+        <MetricCard title="Margem Líquida" value={`${data.kpis.margemLiquida}%`} icon={TrendingUp} accentColor="#3B82F6" />
+        <MetricCard title="Giro do Ativo" value={data.kpis.giroAtivo} icon={BarChart3} accentColor="#10B981" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">

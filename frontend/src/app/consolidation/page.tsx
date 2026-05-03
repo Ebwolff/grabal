@@ -185,24 +185,26 @@ export default function ConsolidationPage() {
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
           {[
-            { label: 'Receita Bruta', value: fmtM(financials.receitaBruta), icon: DollarSign, color: '#10b981', trend: '+12.3%' },
-            { label: 'CMV', value: fmtM(financials.cmvTotal), icon: Target, color: '#ef4444', trend: '-3.1%' },
-            { label: 'Lucro Bruto', value: fmtM(financials.lucroBruto), icon: TrendingUp, color: '#10b981', trend: '+8.7%' },
-            { label: 'EBITDA', value: fmtM(financials.ebitda), icon: BarChart3, color: '#06b6d4', trend: '+5.2%' },
-            { label: 'Lucro Líquido', value: fmtM(financials.lucroLiquido), icon: Landmark, color: '#22c55e', trend: '+6.8%' },
-            { label: 'Margem Líquida', value: `${financials.margemLiquida.toFixed(1)}%`, icon: PieIcon, color: '#a855f7', trend: '+1.2pp' },
+            { label: 'Receita Bruta', value: fmtM(financials.receitaBruta), icon: DollarSign, color: '#10b981', trend: null },
+            { label: 'CMV', value: fmtM(financials.cmvTotal), icon: Target, color: '#ef4444', trend: null },
+            { label: 'Lucro Bruto', value: fmtM(financials.lucroBruto), icon: TrendingUp, color: '#10b981', trend: null },
+            { label: 'EBITDA', value: fmtM(financials.ebitda), icon: BarChart3, color: '#06b6d4', trend: null },
+            { label: 'Lucro Líquido', value: fmtM(financials.lucroLiquido), icon: Landmark, color: '#22c55e', trend: null },
+            { label: 'Margem Líquida', value: `${financials.margemLiquida.toFixed(1)}%`, icon: PieIcon, color: '#a855f7', trend: null },
           ].map((kpi, i) => {
             const Icon = kpi.icon;
-            const isUp = kpi.trend.startsWith('+');
+            const isUp = kpi.trend ? (kpi.trend as string).startsWith('+') : false;
             return (
               <motion.div key={kpi.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
                 className="card p-4 hover:border-slate-600 transition-colors">
                 <div className="flex items-center justify-between mb-2">
                   <Icon size={14} style={{ color: kpi.color }} />
-                  <span className={cn("text-[9px] font-bold flex items-center gap-0.5", isUp ? "text-emerald-500" : "text-red-400")}>
-                    {isUp ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
-                    {kpi.trend}
-                  </span>
+                  {kpi.trend && (
+                    <span className={cn("text-[9px] font-bold flex items-center gap-0.5", isUp ? "text-emerald-500" : "text-red-400")}>
+                      {isUp ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
+                      {kpi.trend}
+                    </span>
+                  )}
                 </div>
                 <p className={cn("text-lg font-black font-mono tracking-tight privacy-mask", isPrivate && "privacy-hidden")} style={{ color: kpi.color }}>{kpi.value}</p>
                 <p className="text-[8px] uppercase tracking-widest text-slate-600 font-black mt-1">{kpi.label}</p>

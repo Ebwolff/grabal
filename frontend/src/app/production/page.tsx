@@ -211,8 +211,8 @@ export default function ProductionPage() {
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <MetricCard title="Área Total" value={`${totals.area.toLocaleString('pt-BR')} ha`} icon={MapPin} accentColor="#3B82F6" />
-        <MetricCard title="Produção Total" value={`${(totals.producao / 1000).toFixed(1)}K sc`} change={kpiVariation.producao} icon={Wheat} accentColor="#10B981" changeLabel="vs safra anterior" />
-        <MetricCard title="Produtividade Média" value={`${totals.prodMedia.toFixed(1)} sc/ha`} change={kpiVariation.produtividade} icon={Sprout} accentColor="#F59E0B" />
+        <MetricCard title="Produção Total" value={`${(totals.producao / 1000).toFixed(1)}K sc`} icon={Wheat} accentColor="#10B981" />
+        <MetricCard title="Produtividade Média" value={`${totals.prodMedia.toFixed(1)} sc/ha`} icon={Sprout} accentColor="#F59E0B" />
         <MetricCard title="Culturas Ativas" value={totals.culturas.toString()} icon={BarChart3} accentColor="#3B82F6" />
       </div>
 

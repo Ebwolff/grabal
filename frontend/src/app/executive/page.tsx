@@ -199,12 +199,12 @@ export default function ExecutiveDashboard() {
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-        <MetricCard title="Receita Total" value={fmtM(data.receita)} change={12.5} icon={TrendingUp} accentColor="#3B82F6" changeLabel="vs projetado" />
-        <MetricCard title="Custos Totais" value={fmtM(data.custo)} change={-2.3} invertChange icon={TrendingDown} accentColor="#EF4444" changeLabel="vs orçado" />
-        <MetricCard title="Lucro Operacional" value={fmtM(data.lucro)} change={8.4} icon={DollarSign} accentColor="#10B981" />
-        <MetricCard title="EBITDA" value={fmtM(data.ebitda)} change={5.2} icon={Activity} accentColor="#3B82F6" />
-        <MetricCard title="Produção" value={(data.producaoTotal / 1000).toFixed(1) + 'K'} change={11.2} icon={Wheat} accentColor="#F59E0B" changeLabel="sacas total" />
-        <MetricCard title="Endividamento" value={fmtM(data.totalEndividamento)} change={-5.0} invertChange icon={BarChart3} accentColor="#10B981" changeLabel="redução" />
+        <MetricCard title="Receita Total" value={fmtM(data.receita)} icon={TrendingUp} accentColor="#3B82F6" />
+        <MetricCard title="Custos Totais" value={fmtM(data.custo)} icon={TrendingDown} accentColor="#EF4444" />
+        <MetricCard title="Lucro Operacional" value={fmtM(data.lucro)} icon={DollarSign} accentColor="#10B981" />
+        <MetricCard title="EBITDA" value={fmtM(data.ebitda)} icon={Activity} accentColor="#3B82F6" />
+        <MetricCard title="Produção" value={(data.producaoTotal / 1000).toFixed(1) + 'K'} icon={Wheat} accentColor="#F59E0B" subtitle="sacas total" />
+        <MetricCard title="Endividamento" value={fmtM(data.totalEndividamento)} icon={BarChart3} accentColor="#10B981" />
       </div>
 
       {/* Charts: Main + Production */}
