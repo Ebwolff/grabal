@@ -225,6 +225,12 @@ export async function createCultura(cultura: Omit<Cultura, 'id' | 'createdAt' | 
   return data
 }
 
+export async function deleteCultura(id: string): Promise<void> {
+  const { error } = await supabase().from('Cultura').delete().eq('id', id)
+  if (error) throw error
+}
+
+
 // Asset
 export async function getAssets(farmId?: string): Promise<Asset[]> {
   let query = supabase().from('Asset').select('*').order('createdAt', { ascending: false })

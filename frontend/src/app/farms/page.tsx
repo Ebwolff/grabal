@@ -12,7 +12,8 @@ import {
   getFarms, createFarm, deleteFarm,
   getProducers, createProducer,
   getEconomicGroups, createSafra, deleteSafra,
-  type Farm, type Producer, type EconomicGroup, type Safra
+  createCultura, deleteCultura,
+  type Farm, type Producer, type EconomicGroup, type Safra, type Cultura
 } from '@/lib/supabase/database';
 
 export default function FarmsPage() {
@@ -23,13 +24,15 @@ export default function FarmsPage() {
   const [producers, setProducers] = useState<Producer[]>([]);
   const [economicGroup, setEconomicGroup] = useState<EconomicGroup | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState<'farm' | 'producer' | 'safra' | null>(null);
+  const [showModal, setShowModal] = useState<'farm' | 'producer' | 'safra' | 'cultura' | null>(null);
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
+  const [selectedSafraId, setSelectedSafraId] = useState<string | null>(null);
 
   // Form states
   const [farmForm, setFarmForm] = useState({ name: '', location: '', totalArea: '', agriculturalArea: '', producerId: '' });
   const [producerForm, setProducerForm] = useState({ name: '', cpfCnpj: '', email: '', phone: '' });
   const [safraForm, setSafraForm] = useState({ year: '2024/25', description: '' });
+  const [culturaForm, setCulturaForm] = useState({ name: '', plantedArea: '', productivity: '', sellingPrice: '' });
   const [saving, setSaving] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -163,9 +166,47 @@ export default function FarmsPage() {
     }
   };
 
+  const handleCreateCultura = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSafraId || !culturaForm.name.trim()) {
+      toastError('Nome da Cultura e Safra são obrigatórios');
+      return;
+    }
+    setSaving(true);
+    try {
+      await createCultura({
+        safraId: selectedSafraId,
+        name: culturaForm.name,
+        plantedArea: parseFloat(culturaForm.plantedArea) || 0,
+        productivity: parseFloat(culturaForm.productivity) || 0,
+        sellingPrice: parseFloat(culturaForm.sellingPrice) || 0
+      });
+      toastSuccess('Cultura cadastrada!');
+      setShowModal(null);
+      setCulturaForm({ name: '', plantedArea: '', productivity: '', sellingPrice: '' });
+      setSelectedSafraId(null);
+      loadData();
+    } catch (err: any) {
+      toastError(`Erro: ${err.message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteCultura = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta cultura?')) return;
+    try {
+      await deleteCultura(id);
+      toastSuccess('Cultura excluída');
+      loadData();
+    } catch (err: any) {
+      toastError(`Erro ao excluir cultura: ${err.message}`);
+    }
+  };
+
   // Get safras for a farm from the nested data
-  const getFarmSafras = (farm: Farm): Safra[] => {
-    return (farm as any).Safra || [];
+  const getFarmSafras = (farm: Farm): any[] => {
+    return farm.safras || (farm as any).Safra || [];
   };
 
   const getProducerName = (producerId: string) => {
@@ -302,21 +343,57 @@ export default function FarmsPage() {
               </div>
 
               <div className="flex justify-between items-center pt-4 border-t border-industrial-border">
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex flex-col gap-3 w-full">
                   {safras.length === 0 && (
                     <span className="text-[10px] text-slate-600 italic">Nenhuma safra cadastrada</span>
                   )}
-                  {safras.map((s: Safra) => (
-                    <span key={s.id} className="group/safra relative text-[10px] px-2 py-1 bg-emerald-950/50 border border-emerald-800 text-emerald-400 font-bold pr-5">
-                      <Sprout size={10} className="inline mr-1" />{s.year}
-                      <button 
-                        onClick={() => handleDeleteSafra(s.id)}
-                        className="absolute right-1 top-1/2 -translate-y-1/2 text-emerald-600 hover:text-red-400 opacity-0 group-hover/safra:opacity-100 transition-all"
-                        title="Excluir Safra"
-                      >
-                        <X size={10} />
-                      </button>
-                    </span>
+                  {safras.map((s: any) => (
+                    <div key={s.id} className="flex flex-col bg-slate-900/50 rounded-lg p-3 border border-slate-800">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
+                          <Sprout size={12} />
+                          {s.year} {s.description && <span className="text-slate-500 font-normal">({s.description})</span>}
+                        </span>
+                        <div className="flex items-center gap-3">
+                          <button 
+                            onClick={() => { setSelectedSafraId(s.id); setShowModal('cultura'); }}
+                            className="text-[10px] text-primary hover:text-primary-light font-bold flex items-center gap-1 transition-colors"
+                            title="Adicionar Cultura nesta Safra"
+                          >
+                            <Plus size={10} /> Cultura
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteSafra(s.id)}
+                            className="text-[10px] text-slate-500 hover:text-red-400 font-bold transition-colors"
+                            title="Excluir Safra"
+                          >
+                            Excluir Safra
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Culturas List */}
+                      {s.culturas && s.culturas.length > 0 ? (
+                        <div className="flex gap-2 flex-wrap">
+                          {s.culturas.map((c: any) => (
+                            <div key={c.id} className="group/cultura relative flex items-center gap-2 text-[10px] px-2 py-1.5 bg-slate-950 border border-slate-800 text-slate-300 rounded">
+                              <span className="font-bold text-slate-200">{c.name}</span>
+                              <span className="text-slate-500">|</span>
+                              <span>{c.plantedArea}ha</span>
+                              <button 
+                                onClick={() => handleDeleteCultura(c.id)}
+                                className="absolute -top-1.5 -right-1.5 text-slate-400 hover:text-red-400 bg-slate-900 rounded-full p-[2px] border border-slate-700 opacity-0 group-hover/cultura:opacity-100 transition-all"
+                                title="Excluir Cultura"
+                              >
+                                <X size={10} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-slate-600 italic">Nenhuma cultura cadastrada nesta safra</span>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -397,6 +474,25 @@ export default function FarmsPage() {
                   <ModalInput label="Ano/Período *" value={safraForm.year} onChange={v => setSafraForm(p => ({ ...p, year: v }))} placeholder="2024/25" />
                   <ModalInput label="Descrição" value={safraForm.description} onChange={v => setSafraForm(p => ({ ...p, description: v }))} placeholder="Detalhes opcionais" />
                   <SubmitButton saving={saving} label="Criar Safra" />
+                </form>
+              )}
+
+              {/* Cultura Modal */}
+              {showModal === 'cultura' && (
+                <form onSubmit={handleCreateCultura} className="space-y-5">
+                  <div>
+                    <h3 className="text-lg font-bold text-white mb-1">Nova Cultura</h3>
+                    <p className="text-xs text-slate-500">Adicione uma cultura para esta safra.</p>
+                  </div>
+                  <ModalInput label="Nome da Cultura *" value={culturaForm.name} onChange={v => setCulturaForm(p => ({ ...p, name: v }))} placeholder="Ex: Soja, Milho, Algodão" />
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <ModalInput label="Área Plantada (ha)" type="number" value={culturaForm.plantedArea} onChange={v => setCulturaForm(p => ({ ...p, plantedArea: v }))} placeholder="0" />
+                    <ModalInput label="Produtividade (sc/ha)" type="number" value={culturaForm.productivity} onChange={v => setCulturaForm(p => ({ ...p, productivity: v }))} placeholder="0" />
+                  </div>
+                  <ModalInput label="Preço de Venda Esperado (R$)" type="number" value={culturaForm.sellingPrice} onChange={v => setCulturaForm(p => ({ ...p, sellingPrice: v }))} placeholder="0.00" />
+                  
+                  <SubmitButton saving={saving} label="Cadastrar Cultura" />
                 </form>
               )}
             </motion.div>
