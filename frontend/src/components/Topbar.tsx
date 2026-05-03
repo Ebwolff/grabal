@@ -6,12 +6,14 @@ import { useSidebar } from '@/context/SidebarContext';
 import { useGlobalFilter } from '@/context/GlobalFilterContext';
 import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
+import { useToast } from '@/components/ToastProvider';
 
 export function Topbar() {
   const { collapsed } = useSidebar();
   const { safra, setSafra, fazenda, setFazenda, cultura, setCultura, safrasOptions, fazendasOptions, culturasOptions } = useGlobalFilter();
   const [user, setUser] = useState<{ name: string, initials: string } | null>(null);
   const supabase = createClient();
+  const toast = useToast();
 
   useEffect(() => {
     async function loadUser() {
@@ -62,9 +64,12 @@ export function Topbar() {
 
       {/* Right: Notifications + Profile */}
       <div className="flex items-center gap-3">
-        <button className="relative p-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-surface-hover">
+        <button 
+          onClick={() => toast.info('Nenhuma notificação no momento')}
+          className="relative p-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-surface-hover"
+        >
           <Bell size={16} />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-primary-light rounded-full" />
+          {/* <span className="absolute top-1 right-1 w-2 h-2 bg-primary-light rounded-full" /> */}
         </button>
 
         <div className="h-6 w-px bg-industrial-border" />
