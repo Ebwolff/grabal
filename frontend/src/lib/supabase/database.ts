@@ -204,6 +204,11 @@ export async function createSafra(safra: Omit<Safra, 'id' | 'createdAt' | 'updat
   return data
 }
 
+export async function deleteSafra(id: string): Promise<void> {
+  const { error } = await supabase().from('Safra').delete().eq('id', id)
+  if (error) throw error
+}
+
 // Cultura
 export async function getCulturas(safraId?: string): Promise<Cultura[]> {
   let query = supabase().from('Cultura').select('*').order('name')

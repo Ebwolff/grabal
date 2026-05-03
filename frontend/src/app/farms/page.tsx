@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   getFarms, createFarm, deleteFarm,
   getProducers, createProducer,
-  getEconomicGroups, createSafra,
+  getEconomicGroups, createSafra, deleteSafra,
   type Farm, type Producer, type EconomicGroup, type Safra
 } from '@/lib/supabase/database';
 
@@ -144,6 +144,21 @@ export default function FarmsPage() {
         toastError('Erro: Esta fazenda possui safras cadastradas. Exclua os dados vinculados a ela primeiro.');
       } else {
         toastError(`Erro: ${err.message}`);
+      }
+    }
+  };
+
+  const handleDeleteSafra = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta safra?')) return;
+    try {
+      await deleteSafra(id);
+      toastSuccess('Safra excluída');
+      loadData();
+    } catch (err: any) {
+      if (err.message?.includes('ProductionRecord_safraId_fkey') || err.message?.includes('CostRecord_safraId_fkey') || err.message?.includes('Cultura_safraId_fkey')) {
+        toastError('Erro: Esta safra possui culturas ou lançamentos cadastrados. Exclua os dados vinculados a ela primeiro.');
+      } else {
+        toastError(`Erro ao excluir safra: ${err.message}`);
       }
     }
   };
@@ -292,8 +307,15 @@ export default function FarmsPage() {
                     <span className="text-[10px] text-slate-600 italic">Nenhuma safra cadastrada</span>
                   )}
                   {safras.map((s: Safra) => (
-                    <span key={s.id} className="text-[10px] px-2 py-1 bg-emerald-950/50 border border-emerald-800 text-emerald-400 font-bold">
+                    <span key={s.id} className="group/safra relative text-[10px] px-2 py-1 bg-emerald-950/50 border border-emerald-800 text-emerald-400 font-bold pr-5">
                       <Sprout size={10} className="inline mr-1" />{s.year}
+                      <button 
+                        onClick={() => handleDeleteSafra(s.id)}
+                        className="absolute right-1 top-1/2 -translate-y-1/2 text-emerald-600 hover:text-red-400 opacity-0 group-hover/safra:opacity-100 transition-all"
+                        title="Excluir Safra"
+                      >
+                        <X size={10} />
+                      </button>
                     </span>
                   ))}
                 </div>
