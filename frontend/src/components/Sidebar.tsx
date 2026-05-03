@@ -69,10 +69,8 @@ const menuGroups: MenuGroup[] = [
     ]
   },
   {
-    label: 'Cadastros',
+    label: 'Sistema',
     items: [
-      { name: 'Produtores', href: '/producers', icon: Users },
-      { name: 'Fazendas & Safras', href: '/farms', icon: Sprout },
       { name: 'Análise Financeira', href: '/finance', icon: BarChart3 },
       { name: 'Base de Dados', href: '/database', icon: Database },
       { name: 'Configurações', href: '/settings', icon: Settings },
