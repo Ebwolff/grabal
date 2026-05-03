@@ -140,7 +140,11 @@ export default function FarmsPage() {
       toastSuccess('Fazenda excluída');
       loadData();
     } catch (err: any) {
-      toastError(`Erro: ${err.message}`);
+      if (err.message?.includes('Safra_farmId_fkey')) {
+        toastError('Erro: Esta fazenda possui safras cadastradas. Exclua os dados vinculados a ela primeiro.');
+      } else {
+        toastError(`Erro: ${err.message}`);
+      }
     }
   };
 

@@ -93,7 +93,11 @@ export default function ProducersPage() {
       success('Produtor excluído!');
       fetchProducers();
     } catch (err: any) {
-      error('Erro ao excluir: ' + err.message);
+      if (err.message?.includes('Farm_producerId_fkey')) {
+        error('Erro: Este cliente possui fazendas cadastradas. Por favor, exclua as fazendas dele primeiro.');
+      } else {
+        error('Erro ao excluir: ' + err.message);
+      }
     }
   };
 
