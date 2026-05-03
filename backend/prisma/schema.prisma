@@ -58,7 +58,7 @@ model Producer {
 model Farm {
   id              String         @id @default(uuid())
   producerId      String
-  producer        Producer       @relation(fields: [producerId], references: [id])
+  producer        Producer       @relation(fields: [producerId], references: [id], onDelete: Cascade)
   name            String
   location        String?
   totalArea       Float
@@ -76,7 +76,7 @@ model Farm {
 model Safra {
   id          String    @id @default(uuid())
   farmId      String
-  farm        Farm      @relation(fields: [farmId], references: [id])
+  farm        Farm      @relation(fields: [farmId], references: [id], onDelete: Cascade)
   year        String
   description String?
   createdAt   DateTime  @default(now())
@@ -88,7 +88,7 @@ model Safra {
 model Cultura {
   id            String   @id @default(uuid())
   safraId       String
-  safra         Safra    @relation(fields: [safraId], references: [id])
+  safra         Safra    @relation(fields: [safraId], references: [id], onDelete: Cascade)
   name          String
   plantedArea   Float
   productivity  Float
@@ -104,7 +104,7 @@ model Cultura {
 model Production {
   id            String   @id @default(uuid())
   culturaId     String
-  cultura       Cultura  @relation(fields: [culturaId], references: [id])
+  cultura       Cultura  @relation(fields: [culturaId], references: [id], onDelete: Cascade)
   area          Float
   productivity  Float
   totalProduction Float
@@ -115,7 +115,7 @@ model Production {
 model Cost {
   id          String   @id @default(uuid())
   culturaId   String
-  cultura     Cultura  @relation(fields: [culturaId], references: [id])
+  cultura     Cultura  @relation(fields: [culturaId], references: [id], onDelete: Cascade)
   type        CostType
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -137,7 +137,7 @@ enum CostType {
 model CostItem {
   id          String   @id @default(uuid())
   costId      String
-  cost        Cost     @relation(fields: [costId], references: [id])
+  cost        Cost     @relation(fields: [costId], references: [id], onDelete: Cascade)
   description String
   value       Float
   createdAt   DateTime @default(now())
@@ -147,7 +147,7 @@ model CostItem {
 model Revenue {
   id            String   @id @default(uuid())
   culturaId     String
-  cultura       Cultura  @relation(fields: [culturaId], references: [id])
+  cultura       Cultura  @relation(fields: [culturaId], references: [id], onDelete: Cascade)
   unitPrice     Float
   volumeSold    Float
   grossRevenue  Float
@@ -158,7 +158,7 @@ model Revenue {
 model Asset {
   id          String   @id @default(uuid())
   farmId      String
-  farm        Farm     @relation(fields: [farmId], references: [id])
+  farm        Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
   type        String
   description String
   value       Float
@@ -169,7 +169,7 @@ model Asset {
 model Liability {
   id          String   @id @default(uuid())
   farmId      String
-  farm        Farm     @relation(fields: [farmId], references: [id])
+  farm        Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
   creditor    String
   type        String
   value       Float
@@ -181,7 +181,7 @@ model Liability {
 model CPR {
   id                  String   @id @default(uuid())
   farmId              String
-  farm                Farm     @relation(fields: [farmId], references: [id])
+  farm                Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
   cultura             String
   committedVolume     Float
   value               Float
@@ -193,7 +193,7 @@ model CPR {
 model Guarantee {
   id          String   @id @default(uuid())
   farmId      String
-  farm        Farm     @relation(fields: [farmId], references: [id])
+  farm        Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
   description String
   value       Float
   createdAt   DateTime @default(now())
