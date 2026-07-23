@@ -14,6 +14,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import Link from 'next/link';
+import { getAssets, deleteAsset, type Asset } from '@/lib/supabase/database';
 
 interface Ativo {
   id: string;
@@ -39,15 +40,46 @@ const tipoColorMap: Record<string, string> = {};
 const tipoIconMap: Record<string, typeof MapPin> = {};
 tiposAtivo.forEach(t => { tipoColorMap[t.value] = t.color; tipoIconMap[t.value] = t.icon; });
 
-const initialData: Ativo[] = [];
-
-function gerarId() { return Math.random().toString(36).substring(2, 9); }
-
 export default function AssetsPage() {
   const { isPrivate } = usePrivacy();
   const { success: toastSuccess, error: toastError, warning: toastWarning } = useToast();
-  const [data, setData] = useState<Ativo[]>(initialData);
+  const [data, setData] = useState<Ativo[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filterTipo, setFilterTipo] = useState('');
+
+  const fetchData = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const assets = await getAssets();
+      const mapped: Ativo[] = assets.map((a: Asset) => {
+        let vidaUtil = 10;
+        if (a.type === 'Terra') vidaUtil = 0; // Terra não deprecia
+        else if (a.type === 'Tecnologia') vidaUtil = 5;
+        else if (a.type === 'Benfeitorias' || a.type === 'Armazéns') vidaUtil = 25;
+        
+        const depreciacaoAnual = vidaUtil > 0 ? a.value / vidaUtil : 0;
+        
+        return {
+          id: a.id,
+          tipo: a.type,
+          descricao: a.description,
+          valor: a.value,
+          aquisicao: a.createdAt.substring(0, 10),
+          vidaUtil,
+          depreciacaoAnual
+        };
+      });
+      setData(mapped);
+    } catch (err: any) {
+      toastError('Erro ao carregar ativos: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [toastError]);
+
+  React.useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const filtered = useMemo(() => data.filter(d => !filterTipo || d.tipo === filterTipo), [data, filterTipo]);
 
@@ -65,7 +97,15 @@ export default function AssetsPage() {
     .map(([tipo, valor]) => ({ name: tipo, value: valor, color: tipoColorMap[tipo] || '#64748b' }))
     .sort((a, b) => b.value - a.value);
 
-  const removeItem = (id: string) => { setData(prev => prev.filter(d => d.id !== id)); toastWarning('Ativo removido'); };
+  const removeItem = async (id: string) => {
+    try {
+      await deleteAsset(id);
+      toastWarning('Ativo removido');
+      fetchData();
+    } catch (err: any) {
+      toastError('Erro ao remover: ' + err.message);
+    }
+  };
 
   const fmt = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
   const fmtM = (v: number) => `R$ ${(v / 1000000).toFixed(2)}M`;

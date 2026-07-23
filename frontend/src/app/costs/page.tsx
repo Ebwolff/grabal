@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { getCostsByType, getCulturas, createCostWithItems, deleteCostItem, type Cultura } from '@/lib/supabase/database';
 
 interface Insumo {
   id: string;
@@ -32,10 +33,6 @@ const tipoConfig = {
 };
 
 const pieColors = { fertilizante: '#10b981', defensivo: '#F59E0B', semente: '#3B82F6' };
-
-const initialData: Insumo[] = [];
-
-const culturasDisponiveis = ['Soja', 'Milho', 'Algodão', 'Café', 'Trigo'];
 const tiposDisponiveis: Array<{ value: Insumo['tipo']; label: string }> = [
   { value: 'fertilizante', label: 'Fertilizante' },
   { value: 'defensivo', label: 'Defensivo' },
@@ -48,11 +45,60 @@ export default function CostsPage() {
   const { isPrivate } = usePrivacy();
   const { success: toastSuccess, error: toastError, warning: toastWarning } = useToast();
   const { cultura: globalCultura } = useGlobalFilter();
-  const [data, setData] = useState<Insumo[]>(initialData);
+  const [data, setData] = useState<Insumo[]>([]);
+  const [culturas, setCulturas] = useState<Cultura[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formStatus, setFormStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [form, setForm] = useState({ cultura: '', produto: '', tipo: '' as Insumo['tipo'] | '', quantidade: '', precoUnitario: '' });
+  const [form, setForm] = useState({ culturaId: '', produto: '', tipo: '' as Insumo['tipo'] | '', quantidade: '', precoUnitario: '' });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const fetchData = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const [costs, cults] = await Promise.all([
+        getCostsByType('INSUMOS'),
+        getCulturas(),
+      ]);
+      setCulturas(cults);
+
+      const mapped = costs.flatMap(c =>
+        (c.items || []).map(item => {
+          let tipo = 'fertilizante';
+          let produto = item.description;
+          let qtd = 1;
+          let price = item.value;
+          
+          if (item.description.includes(' | ')) {
+            const parts = item.description.split(' | ');
+            tipo = parts[0].replace('[', '').replace(']', '');
+            produto = parts[1];
+            qtd = parseFloat(parts[2]) || 1;
+            price = parseFloat(parts[3]) || item.value;
+          }
+          
+          return {
+            id: item.id,
+            cultura: (c.Cultura as any)?.name || 'Desconhecida',
+            produto,
+            tipo: tipo as 'fertilizante' | 'defensivo' | 'semente',
+            quantidade: qtd,
+            precoUnitario: price,
+            custoTotal: item.value,
+          };
+        })
+      );
+      setData(mapped);
+    } catch (err: any) {
+      toastError('Erro ao carregar insumos: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [toastError]);
+
+  React.useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const filtered = useMemo(() => {
     return data.filter(d => (!globalCultura || d.cultura === globalCultura));
@@ -79,11 +125,19 @@ export default function CostsPage() {
     .map(([cult, valor]) => ({ cultura: cult, valor }))
     .sort((a, b) => b.valor - a.valor);
 
-  const removeItem = (id: string) => { setData(prev => prev.filter(d => d.id !== id)); toastWarning('Insumo removido'); };
+  const removeItem = async (id: string) => {
+    try {
+      await deleteCostItem(id);
+      toastWarning('Insumo removido');
+      fetchData();
+    } catch (err: any) {
+      toastError('Erro ao remover: ' + err.message);
+    }
+  };
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
-    if (!form.cultura) errors.cultura = 'Obrigatório';
+    if (!form.culturaId) errors.culturaId = 'Obrigatório';
     if (!form.produto.trim()) errors.produto = 'Obrigatório';
     if (!form.tipo) errors.tipo = 'Obrigatório';
     const qty = parseFloat(form.quantidade);
@@ -94,16 +148,32 @@ export default function CostsPage() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!validateForm()) { setFormStatus('error'); toastError('Preencha todos os campos obrigatórios'); setTimeout(() => setFormStatus('idle'), 2000); return; }
     const qty = parseFloat(form.quantidade);
     const price = parseFloat(form.precoUnitario);
-    setData(prev => [{ id: gerarId(), cultura: form.cultura, produto: form.produto, tipo: form.tipo as Insumo['tipo'], quantidade: qty, precoUnitario: price, custoTotal: qty * price }, ...prev]);
-    setForm({ cultura: '', produto: '', tipo: '', quantidade: '', precoUnitario: '' });
-    setFormErrors({});
-    setFormStatus('success');
-    toastSuccess('Insumo adicionado com sucesso!');
-    setTimeout(() => { setFormStatus('idle'); setShowForm(false); }, 1500);
+    const total = qty * price;
+    
+    try {
+      await createCostWithItems({
+        culturaId: form.culturaId,
+        type: 'INSUMOS',
+      }, [{
+        description: `[${form.tipo}] | ${form.produto} | ${qty} | ${price}`,
+        value: total,
+      }]);
+      
+      setForm({ culturaId: '', produto: '', tipo: '', quantidade: '', precoUnitario: '' });
+      setFormErrors({});
+      setFormStatus('success');
+      toastSuccess('Insumo registrado!');
+      fetchData();
+      setTimeout(() => { setFormStatus('idle'); setShowForm(false); }, 1500);
+    } catch (err: any) {
+      setFormStatus('error');
+      toastError('Erro ao registrar: ' + err.message);
+      setTimeout(() => setFormStatus('idle'), 2000);
+    }
   };
 
   const fmt = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
@@ -130,12 +200,13 @@ export default function CostsPage() {
               <h4 className="text-sm font-semibold text-white mb-4">Cadastrar Insumo</h4>
               <div className="grid grid-cols-6 gap-3 items-end">
                 <div>
-                  <label className="text-[9px] font-semibold uppercase tracking-widest text-slate-500 block mb-1">Cultura</label>
-                  <select value={form.cultura} onChange={(e) => { setForm(p => ({ ...p, cultura: e.target.value })); setFormErrors(p => { const n = { ...p }; delete n.cultura; return n; }); }}
-                    className={cn('w-full bg-industrial-bg border px-3 py-2 text-sm rounded focus:outline-none focus-ring', formErrors.cultura ? 'border-danger/60' : 'border-industrial-border')}>
-                    <option value="">Selecione</option>
-                    {culturasDisponiveis.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                    <label className="text-[9px] font-semibold text-slate-500 block mb-1">Cultura / Safra</label>
+                    <select value={form.culturaId}
+                      onChange={(e) => { setForm(p => ({ ...p, culturaId: e.target.value })); setFormErrors(p => { const n = { ...p }; delete n.culturaId; return n; }); }}
+                      className={cn("w-full bg-slate-900 border px-3 py-2 text-sm focus:outline-none focus:border-primary", formErrors.culturaId ? "border-red-500/60" : "border-industrial-border")}>
+                      <option value="">Selecione a cultura</option>
+                      {culturas.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
                 </div>
                 <div className="col-span-2">
                   <label className="text-[9px] font-semibold uppercase tracking-widest text-slate-500 block mb-1">Produto</label>

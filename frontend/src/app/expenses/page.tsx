@@ -14,6 +14,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import Link from 'next/link';
+import { getCostsByType, deleteCostItem } from '@/lib/supabase/database';
 
 interface Despesa {
   id: string;
@@ -39,15 +40,54 @@ const tipoColorMap: Record<string, string> = {};
 const tipoIconMap: Record<string, typeof Zap> = {};
 tiposDespesa.forEach(t => { tipoColorMap[t.value] = t.color; tipoIconMap[t.value] = t.icon; });
 
-const initialData: Despesa[] = [];
-
-function gerarId() { return Math.random().toString(36).substring(2, 9); }
-
 export default function ExpensesPage() {
   const { isPrivate } = usePrivacy();
   const { success: toastSuccess, error: toastError, warning: toastWarning } = useToast();
-  const [data, setData] = useState<Despesa[]>(initialData);
+  const [data, setData] = useState<Despesa[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filterTipo, setFilterTipo] = useState('');
+
+  const fetchData = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const costs = await getCostsByType('DESPESAS_ADMINISTRATIVAS');
+      const mapped = costs.flatMap(c => 
+        (c.items || []).map(item => {
+          let tipo = 'Outros';
+          let desc = item.description;
+          let recorrente = false;
+          const dt = new Date(item.createdAt);
+          let mes = dt.toLocaleString('pt-BR', { month: 'short' });
+
+          if (item.description.includes(' | ')) {
+            const parts = item.description.split(' | ');
+            tipo = parts[0].replace('[', '').replace(']', '');
+            desc = parts[1];
+            if (parts.length > 2) recorrente = parts[2] === 'true';
+            if (parts.length > 3) mes = parts[3];
+          }
+
+          return {
+            id: item.id,
+            tipo,
+            descricao: desc,
+            valor: item.value,
+            recorrente,
+            mes
+          };
+        })
+      );
+      setData(mapped);
+    } catch (err: any) {
+      toastError('Erro ao carregar despesas: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [toastError]);
+
+  React.useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const filtered = useMemo(() => {
     return data.filter(d => !filterTipo || d.tipo === filterTipo);
@@ -66,7 +106,15 @@ export default function ExpensesPage() {
     .map(([tipo, valor]) => ({ name: tipo, value: valor, color: tipoColorMap[tipo] || '#64748b' }))
     .sort((a, b) => b.value - a.value);
 
-  const removeItem = (id: string) => { setData(prev => prev.filter(d => d.id !== id)); toastWarning('Despesa removida'); };
+  const removeItem = async (id: string) => {
+    try {
+      await deleteCostItem(id);
+      toastWarning('Despesa removida');
+      fetchData();
+    } catch (err: any) {
+      toastError('Erro ao remover: ' + err.message);
+    }
+  };
 
   const fmt = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 

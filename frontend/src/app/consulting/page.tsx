@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { getCostsByType, getCulturas, createCostWithItems, deleteCostItem, type Cultura } from '@/lib/supabase/database';
 
 interface Consultoria {
   id: string;
@@ -43,20 +44,72 @@ const contratoConfig = {
   anual: { label: 'Anual', bg: 'bg-cyan-950/40 border-cyan-800 text-cyan-400' },
 };
 
-const initialData: Consultoria[] = [];
+// No initial data needed
 
 function gerarId() { return Math.random().toString(36).substring(2, 9); }
 
 export default function ConsultingPage() {
   const { isPrivate } = usePrivacy();
   const { success: toastSuccess, error: toastError, warning: toastWarning } = useToast();
-  const [data, setData] = useState<Consultoria[]>(initialData);
+  const [data, setData] = useState<Consultoria[]>([]);
+  const [culturas, setCulturas] = useState<Cultura[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filterTipo, setFilterTipo] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [formStatus, setFormStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-  const [form, setForm] = useState({ tipoConsultoria: '', consultor: '', descricao: '', valor: '', contrato: 'mensal' as Consultoria['contrato'] });
+  const [form, setForm] = useState({ culturaId: '', tipoConsultoria: '', consultor: '', descricao: '', valor: '', contrato: 'mensal' as Consultoria['contrato'] });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const fetchData = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const [costs, cults] = await Promise.all([
+        getCostsByType('CONSULTORIAS'),
+        getCulturas(),
+      ]);
+      setCulturas(cults);
+
+      const mapped = costs.flatMap(c => 
+        (c.items || []).map(item => {
+          let tipoConsultoria = 'Outros';
+          let consultor = 'Não informado';
+          let descricao = item.description;
+          let contrato = 'mensal';
+          
+          if (item.description.includes(' | ')) {
+            const parts = item.description.split(' | ');
+            tipoConsultoria = parts[0].replace('[', '').replace(']', '');
+            consultor = parts[1];
+            descricao = parts[2];
+            if (parts.length > 3) contrato = parts[3];
+          }
+
+          const dt = new Date(item.createdAt);
+          const periodo = `${dt.getFullYear()}/${(dt.getFullYear() + 1).toString().slice(2)}`;
+
+          return {
+            id: item.id,
+            tipoConsultoria,
+            consultor,
+            descricao,
+            valor: item.value,
+            periodo,
+            contrato: contrato as 'mensal' | 'projeto' | 'anual',
+          };
+        })
+      );
+      setData(mapped);
+    } catch (err: any) {
+      toastError('Erro ao carregar consultorias: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [toastError]);
+
+  React.useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const filtered = useMemo(() => data.filter(d => !filterTipo || d.tipoConsultoria === filterTipo), [data, filterTipo]);
 
@@ -72,10 +125,19 @@ export default function ConsultingPage() {
     .map(([tipo, valor]) => ({ name: tipo, value: valor, color: tipoColorMap[tipo] || '#64748b' }))
     .sort((a, b) => b.value - a.value);
 
-  const removeItem = (id: string) => { setData(prev => prev.filter(d => d.id !== id)); toastWarning('Registro removido'); };
+  const removeItem = async (id: string) => {
+    try {
+      await deleteCostItem(id);
+      toastWarning('Registro removido');
+      fetchData();
+    } catch (err: any) {
+      toastError('Erro ao remover: ' + err.message);
+    }
+  };
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
+    if (!form.culturaId) errors.culturaId = 'Obrigatório';
     if (!form.tipoConsultoria) errors.tipoConsultoria = 'Obrigatório';
     if (!form.consultor.trim()) errors.consultor = 'Obrigatório';
     if (!form.descricao.trim()) errors.descricao = 'Obrigatório';
@@ -85,18 +147,29 @@ export default function ConsultingPage() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!validateForm()) { setFormStatus('error'); toastError('Preencha todos os campos obrigatórios'); setTimeout(() => setFormStatus('idle'), 2000); return; }
-    const newItem: Consultoria = {
-      id: gerarId(), tipoConsultoria: form.tipoConsultoria, consultor: form.consultor,
-      descricao: form.descricao, valor: parseFloat(form.valor), periodo: '2024/25', contrato: form.contrato,
-    };
-    setData(prev => [newItem, ...prev]);
-    setForm({ tipoConsultoria: '', consultor: '', descricao: '', valor: '', contrato: 'mensal' });
-    setFormErrors({});
-    setFormStatus('success');
-    toastSuccess('Consultoria registrada com sucesso!');
-    setTimeout(() => { setFormStatus('idle'); setShowForm(false); }, 1500);
+    
+    try {
+      await createCostWithItems({
+        culturaId: form.culturaId,
+        type: 'CONSULTORIAS',
+      }, [{
+        description: `[${form.tipoConsultoria}] | ${form.consultor} | ${form.descricao} | ${form.contrato}`,
+        value: parseFloat(form.valor),
+      }]);
+      
+      setForm({ culturaId: '', tipoConsultoria: '', consultor: '', descricao: '', valor: '', contrato: 'mensal' });
+      setFormErrors({});
+      setFormStatus('success');
+      toastSuccess('Consultoria registrada com sucesso!');
+      fetchData();
+      setTimeout(() => { setFormStatus('idle'); setShowForm(false); }, 1500);
+    } catch (err: any) {
+      setFormStatus('error');
+      toastError('Erro ao registrar: ' + err.message);
+      setTimeout(() => setFormStatus('idle'), 2000);
+    }
   };
 
   const fmt = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
@@ -119,9 +192,18 @@ export default function ConsultingPage() {
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-6 overflow-hidden">
               <div className="bg-industrial-card border border-primary/30 p-6">
                 <h4 className="font-bold uppercase tracking-tight text-sm mb-4">Registrar Consultoria</h4>
-                <div className="grid grid-cols-6 gap-4 items-end">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
                   <div>
-                    <label className="text-[9px] font-semibold text-slate-500 block mb-1">Tipo</label>
+                    <label className="text-[9px] font-semibold text-slate-500 block mb-1">Cultura / Safra</label>
+                    <select value={form.culturaId}
+                      onChange={(e) => { setForm(p => ({ ...p, culturaId: e.target.value })); setFormErrors(p => { const n = { ...p }; delete n.culturaId; return n; }); }}
+                      className={cn("w-full bg-slate-900 border px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-400", formErrors.culturaId ? "border-red-500/60" : "border-industrial-border")}>
+                      <option value="">Selecione</option>
+                      {culturas.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-semibold text-slate-500 block mb-1">Tipo de Consultoria</label>
                     <select value={form.tipoConsultoria}
                       onChange={(e) => { setForm(p => ({ ...p, tipoConsultoria: e.target.value })); setFormErrors(p => { const n = { ...p }; delete n.tipoConsultoria; return n; }); }}
                       className={cn("w-full bg-slate-900 border px-3 py-2 text-sm focus:outline-none focus:border-primary", formErrors.tipoConsultoria ? "border-red-500/60" : "border-industrial-border")}>
@@ -136,7 +218,7 @@ export default function ConsultingPage() {
                       placeholder="Nome ou empresa"
                       className={cn("w-full bg-slate-900 border px-3 py-2 text-sm focus:outline-none focus:border-primary placeholder:text-slate-700", formErrors.consultor ? "border-red-500/60" : "border-industrial-border")} />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-1 md:col-span-3 lg:col-span-5">
                     <label className="text-[9px] font-semibold text-slate-500 block mb-1">Descrição</label>
                     <input value={form.descricao}
                       onChange={(e) => { setForm(p => ({ ...p, descricao: e.target.value })); setFormErrors(p => { const n = { ...p }; delete n.descricao; return n; }); }}

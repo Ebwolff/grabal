@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { getGuarantees, createGuarantee, deleteGuarantee, getFarmsSimple, getLiabilities, type Guarantee, type Farm, type Liability } from '@/lib/supabase/database';
 
 interface Garantia {
   id: string;
@@ -40,10 +41,7 @@ const statusCfg = {
   em_analise: { label: 'Em Análise', cls: 'bg-cyan-950/40 border-cyan-800 text-cyan-400' },
 };
 
-const initialData: Garantia[] = [];
-
-// Rating calculation based on guarantees vs liabilities
-const passivoTotal = 0; // TODO: Calculate from Supabase Liability table
+// No initial data needed
 
 function calcRating(ratio: number): { grade: string; color: string; stars: number; label: string } {
   if (ratio >= 3.0) return { grade: 'AAA', color: '#10b981', stars: 5, label: 'Excepcional' };
@@ -65,13 +63,49 @@ export default function GuaranteesPage() {
   const [filterTipo, setFilterTipo] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [formStatus, setFormStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [farms, setFarms] = useState<Farm[]>([]);
+  const [passivoTotal, setPassivoTotal] = useState(0);
+
+  const fetchData = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const [guarantees, farmsData, liabilitiesData] = await Promise.all([
+        getGuarantees(),
+        getFarmsSimple(),
+        getLiabilities(),
+      ]);
+      setFarms(farmsData);
+      setPassivoTotal(liabilitiesData.reduce((acc, l) => acc + l.value, 0));
+
+      const mapped: Garantia[] = guarantees.map(g => {
+        let tipo = 'Outros';
+        let desc = g.description;
+        if (g.description.includes(' | ')) {
+          const parts = g.description.split(' | ');
+          tipo = parts[0].replace('[', '').replace(']', '');
+          desc = parts.slice(1).join(' | ');
+        }
+        return {
+          id: g.id,
+          tipo,
+          descricao: desc,
+          valor: g.value,
+          status: 'aceita', // Supabase Guarantee doesn't have status, defaulting to aceita
+        };
+      });
+      setData(mapped);
+    } catch (err: any) {
+      toastError('Erro ao carregar garantias: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [toastError]);
 
   React.useEffect(() => {
-    // TODO: Connect to Supabase Guarantee table
-    setLoading(false);
-  }, []);
+    fetchData();
+  }, [fetchData]);
 
-  const [form, setForm] = useState({ tipo: '', descricao: '', valor: '' });
+  const [form, setForm] = useState({ tipo: '', descricao: '', valor: '', farmId: '' });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const filtered = useMemo(() => data.filter(d => !filterTipo || d.tipo === filterTipo), [data, filterTipo]);
@@ -91,7 +125,15 @@ export default function GuaranteesPage() {
     .map(([tipo, valor]) => ({ name: tipo, value: valor, color: tipoColorMap[tipo] || '#64748b' }))
     .sort((a, b) => b.value - a.value);
 
-  const removeItem = (id: string) => { setData(prev => prev.filter(d => d.id !== id)); toastWarning('Garantia removida'); };
+  const removeItem = async (id: string) => {
+    try {
+      await deleteGuarantee(id);
+      toastWarning('Garantia removida');
+      fetchData();
+    } catch (err: any) {
+      toastError('Erro ao remover: ' + err.message);
+    }
+  };
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
@@ -99,6 +141,7 @@ export default function GuaranteesPage() {
     if (!form.descricao.trim()) errors.descricao = 'Obrigatório';
     const val = parseFloat(form.valor);
     if (!form.valor || isNaN(val) || val <= 0) errors.valor = 'Valor positivo';
+    if (!form.farmId) errors.farmId = 'Obrigatório';
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -106,18 +149,23 @@ export default function GuaranteesPage() {
   const handleAdd = async () => {
     if (!validateForm()) { setFormStatus('error'); toastError('Preencha todos os campos obrigatórios'); setTimeout(() => setFormStatus('idle'), 2000); return; }
     
-    // TODO: Connect to Supabase
-
-    const newItem: Garantia = {
-      id: gerarId(), tipo: form.tipo, descricao: form.descricao,
-      valor: parseFloat(form.valor), status: 'pendente',
-    };
-    setData(prev => [newItem, ...prev]);
-    setForm({ tipo: '', descricao: '', valor: '' });
-    setFormErrors({});
-    setFormStatus('success');
-    toastSuccess('Garantia registrada (Simulada)!');
-    setTimeout(() => { setFormStatus('idle'); setShowForm(false); }, 1500);
+    try {
+      await createGuarantee({
+        farmId: form.farmId,
+        description: `[${form.tipo}] | ${form.descricao}`,
+        value: parseFloat(form.valor),
+      });
+      setForm({ tipo: '', descricao: '', valor: '', farmId: '' });
+      setFormErrors({});
+      setFormStatus('success');
+      toastSuccess('Garantia registrada!');
+      fetchData();
+      setTimeout(() => { setFormStatus('idle'); setShowForm(false); }, 1500);
+    } catch (err: any) {
+      setFormStatus('error');
+      toastError('Erro ao registrar: ' + err.message);
+      setTimeout(() => setFormStatus('idle'), 2000);
+    }
   };
 
   const fmt = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
@@ -141,9 +189,18 @@ export default function GuaranteesPage() {
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-6 overflow-hidden">
               <div className="bg-industrial-card border border-primary/30 p-6">
                 <h4 className="font-bold uppercase tracking-tight text-sm mb-4">Registrar Garantia</h4>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-end">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                   <div>
-                    <label className="text-[9px] font-semibold text-slate-500 block mb-1">Tipo</label>
+                    <label className="text-[9px] font-semibold text-slate-500 block mb-1">Fazenda</label>
+                    <select value={form.farmId}
+                      onChange={(e) => { setForm(p => ({ ...p, farmId: e.target.value })); setFormErrors(p => { const n = { ...p }; delete n.farmId; return n; }); }}
+                      className={cn("w-full bg-slate-900 border px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-400", formErrors.farmId ? "border-red-500/60" : "border-industrial-border")}>
+                      <option value="">Selecione</option>
+                      {farms.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-semibold text-slate-500 block mb-1">Tipo de Garantia</label>
                     <select value={form.tipo}
                       onChange={(e) => { setForm(p => ({ ...p, tipo: e.target.value })); setFormErrors(p => { const n = { ...p }; delete n.tipo; return n; }); }}
                       className={cn("w-full bg-slate-900 border px-3 py-2 text-sm focus:outline-none focus:border-primary", formErrors.tipo ? "border-red-500/60" : "border-industrial-border")}>
