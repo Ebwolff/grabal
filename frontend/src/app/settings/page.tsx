@@ -5,20 +5,44 @@ import { MainContent } from '@/components/MainContent';
 import { PageHeader } from '@/components/PageHeader';
 import { usePrivacy } from '@/context/PrivacyContext';
 import { cn } from '@/lib/utils';
-import { User, Shield, Bell, Database, Key, Globe } from 'lucide-react';
+import { User, Shield, Bell, Database, Key, Globe, LogOut } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
 
 export default function SettingsPage() {
   const { isPrivate, togglePrivacy } = usePrivacy();
+  const [userEmail, setUserEmail] = React.useState('Carregando...');
+  const [userName, setUserName] = React.useState('Carregando...');
+  const router = useRouter();
+
+  React.useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) {
+        setUserEmail(data.user.email || '');
+        setUserName(data.user.user_metadata?.name || 'Administrador Grambal');
+      } else {
+        setUserEmail('Não autenticado');
+        setUserName('Não autenticado');
+      }
+    });
+  }, []);
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
 
   const sections = [
     {
       title: 'Perfil do Usuário',
       icon: User,
       fields: [
-        { label: 'Nome Completo', value: 'Administrador Grambal', type: 'text' },
-        { label: 'Email Corporativo', value: 'admin@grambal.com.br', type: 'email' },
-        { label: 'Cargo', value: 'Analista Financeiro Sênior', type: 'text' },
+        { label: 'Nome Completo', value: userName, type: 'text' },
+        { label: 'Email Corporativo', value: userEmail, type: 'email', disabled: true },
+        { label: 'Cargo', value: 'Administrador do Sistema', type: 'text' },
         { label: 'Grupo Econômico', value: 'Grambal Holdings', type: 'text', disabled: true },
       ],
     },
@@ -28,7 +52,6 @@ export default function SettingsPage() {
       fields: [
         { label: 'Autenticação 2FA', value: '', type: 'toggle', enabled: true },
         { label: 'Sessão Ativa Máxima', value: '8 horas', type: 'select' },
-        { label: 'Última Troca de Senha', value: '14/02/2026', type: 'text', disabled: true },
       ],
     },
   ];
@@ -64,22 +87,22 @@ export default function SettingsPage() {
                         <button
                           className={cn(
                             "w-12 h-6 rounded-full relative transition-colors",
-                            field.enabled ? "bg-primary" : "bg-slate-700"
+                            (field as any).enabled ? "bg-primary" : "bg-slate-700"
                           )}
                         >
                           <div className={cn(
                             "w-5 h-5 bg-white rounded-full absolute top-0.5 transition-all",
-                            field.enabled ? "left-6" : "left-0.5"
+                            (field as any).enabled ? "left-6" : "left-0.5"
                           )} />
                         </button>
                       ) : (
                         <input
                           type={field.type}
                           defaultValue={field.value}
-                          disabled={field.disabled}
+                          disabled={(field as any).disabled}
                           className={cn(
                             "flex-1 bg-slate-900 border border-industrial-border px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-all ml-4",
-                            field.disabled && "opacity-50 cursor-not-allowed"
+                            (field as any).disabled && "opacity-50 cursor-not-allowed"
                           )}
                         />
                       )}
@@ -99,6 +122,44 @@ export default function SettingsPage() {
 
           {/* Sidebar - Quick Actions */}
           <div className="space-y-6">
+            {/* User Identity - Real Data */}
+            <div className="card p-5 flex items-center gap-4">
+              <div className="w-12 h-12 bg-primary/20 text-primary rounded-full flex items-center justify-center font-bold text-lg border border-primary/30">
+                {userName.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <h4 className="font-bold">{userName}</h4>
+                <p className="text-xs text-slate-400">{userEmail}</p>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="card">
+              <div className="p-4 border-b border-industrial-border">
+                <h4 className="font-bold uppercase tracking-tight text-xs text-slate-400">Ações Rápidas</h4>
+              </div>
+              <div className="p-2 space-y-1">
+                {[
+                  { label: 'Trocar Senha', icon: Key },
+                  { label: 'Notificações', icon: Bell },
+                  { label: 'Regras de Acesso', icon: Globe },
+                  { label: 'Sair da Conta', icon: LogOut, action: handleLogout, color: 'text-red-400 hover:text-red-300' },
+                ].map((action, i) => (
+                  <button
+                    key={action.label}
+                    onClick={action.action}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-slate-800/50 rounded-lg transition-colors text-left",
+                      action.color ? action.color : "text-slate-300 hover:text-white"
+                    )}
+                  >
+                    <action.icon size={16} />
+                    {action.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Privacy Mode Card */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}

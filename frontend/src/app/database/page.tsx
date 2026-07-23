@@ -15,8 +15,10 @@ const recentImports = [
 ];
 
 import { createClient } from '@/lib/supabase/client';
+import { useToast } from '@/components/ToastProvider';
 
 export default function DatabasePage() {
+  const { info } = useToast();
   const [stats, setStats] = React.useState([
     { name: 'Produtores', records: 0, icon: '👤', table: 'Client' },
     { name: 'Fazendas', records: 0, icon: '🏡', table: 'Farm' },
@@ -62,6 +64,7 @@ export default function DatabasePage() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
+            onClick={() => info('API de importação de planilhas ainda não implementada.')}
             className="bg-industrial-card border-2 border-dashed border-industrial-border hover:border-primary p-8 flex flex-col items-center justify-center cursor-pointer group transition-all"
           >
             <Upload size={32} className="text-slate-500 group-hover:text-primary-light transition-colors mb-4" />
@@ -73,6 +76,7 @@ export default function DatabasePage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
+            onClick={() => info('Serviço de geração de relatórios PDF/Excel pendente.')}
             className="card hover:border-primary p-8 flex flex-col items-center justify-center cursor-pointer group transition-all"
           >
             <Download size={32} className="text-slate-500 group-hover:text-primary-light transition-colors mb-4" />
@@ -84,6 +88,7 @@ export default function DatabasePage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
+            onClick={() => info('O banco de dados já opera em tempo real.')}
             className="card hover:border-primary p-8 flex flex-col items-center justify-center cursor-pointer group transition-all"
           >
             <Database size={32} className="text-slate-500 group-hover:text-primary-light transition-colors mb-4" />

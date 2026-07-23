@@ -6,9 +6,14 @@ import { PageHeader } from '@/components/PageHeader';
 import { cn } from '@/lib/utils';
 import { 
   Save, AlertCircle, CheckCircle2, Plus, Trash2,
-  User, MapPin, Sprout, Wheat, Ruler, TrendingUp, DollarSign, Receipt
+  User, MapPin, Sprout, Wheat, Ruler, TrendingUp, DollarSign, Receipt, Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '@/components/ToastProvider';
+import {
+  getEconomicGroups, createProducer, createFarm, createSafra, createCultura, createCostWithItems,
+  type EconomicGroup
+} from '@/lib/supabase/database';
 
 interface CustoInicial {
   id: string;
@@ -57,8 +62,16 @@ export default function InputPage() {
     custos: [{ id: gerarId(), tipo: '', descricao: '', valor: '' }],
   });
 
+  const { success: toastSuccess, error: toastError } = useToast();
   const [errors, setErrors] = useState<FormErrors>({});
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error' | 'loading'>('idle');
+  const [economicGroup, setEconomicGroup] = useState<EconomicGroup | null>(null);
+
+  React.useEffect(() => {
+    getEconomicGroups().then(groups => {
+      if (groups && groups.length > 0) setEconomicGroup(groups[0]);
+    }).catch(console.error);
+  }, []);
 
   const updateField = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -128,33 +141,99 @@ export default function InputPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) {
       setSubmitStatus('error');
+      toastError('Preencha os campos obrigatórios corretamente');
       setTimeout(() => setSubmitStatus('idle'), 3000);
       return;
     }
+    
+    if (!economicGroup) {
+      toastError('Nenhum Grupo Econômico encontrado no sistema. Por favor, contate o administrador.');
+      return;
+    }
 
-    // Mock: no futuro isso envia para o backend
-    console.log('Dados para envio:', {
-      ...formData,
-      areaPlantada: parseFloat(formData.areaPlantada),
-      produtividade: parseFloat(formData.produtividade),
-      precoVenda: parseFloat(formData.precoVenda),
-      custos: formData.custos.map(c => ({ ...c, valor: parseFloat(c.valor) })),
-      receitaBrutaEstimada: parseFloat(formData.areaPlantada) * parseFloat(formData.produtividade) * parseFloat(formData.precoVenda),
-    });
-
-    setSubmitStatus('success');
-    setTimeout(() => {
-      setSubmitStatus('idle');
-      setFormData({
-        produtor: '', fazenda: '', safra: '', cultura: '',
-        areaPlantada: '', produtividade: '', precoVenda: '',
-        custos: [{ id: gerarId(), tipo: '', descricao: '', valor: '' }],
+    try {
+      setSubmitStatus('loading');
+      
+      const prod = await createProducer({
+        name: formData.produtor,
+        cpfCnpj: '000.000.000-00', // Placeholder as it's required in the schema but not in the UI
+        email: null,
+        phone: null,
+        economicGroupId: economicGroup.id
       });
-    }, 3000);
+      
+      const farm = await createFarm({
+        name: formData.fazenda,
+        producerId: prod.id,
+        location: null,
+        totalArea: parseFloat(formData.areaPlantada) * 1.5, // Est.
+        agriculturalArea: parseFloat(formData.areaPlantada)
+      });
+      
+      const safra = await createSafra({
+        farmId: farm.id,
+        year: formData.safra,
+        description: null
+      });
+      
+      const cultura = await createCultura({
+        safraId: safra.id,
+        name: formData.cultura,
+        plantedArea: parseFloat(formData.areaPlantada),
+        productivity: parseFloat(formData.produtividade),
+        sellingPrice: parseFloat(formData.precoVenda)
+      });
+      
+      // Group costs by type to reduce API calls
+      const mapTipoParaEnum = (tipo: string) => {
+        if (tipo === 'Mão de Obra') return 'MAO_DE_OBRA';
+        if (tipo === 'Serviços') return 'SERVICOS';
+        if (tipo === 'Insumos' || tipo === 'Sementes' || tipo === 'Defensivos' || tipo === 'Fertilizantes') return 'INSUMOS';
+        if (tipo === 'Frete') return 'FRETE';
+        if (tipo === 'Armazenagem') return 'ARMAZENAGEM';
+        if (tipo === 'Manutenção') return 'MANUTENCAO';
+        if (tipo === 'Consultorias') return 'CONSULTORIAS';
+        return 'OUTROS';
+      };
+
+      const groupedCosts: Record<string, { description: string, value: number }[]> = {};
+      formData.custos.forEach(c => {
+        const enumType = mapTipoParaEnum(c.tipo);
+        if (!groupedCosts[enumType]) groupedCosts[enumType] = [];
+        groupedCosts[enumType].push({
+          description: c.descricao,
+          value: parseFloat(c.valor)
+        });
+      });
+
+      for (const [type, items] of Object.entries(groupedCosts)) {
+        await createCostWithItems({
+          culturaId: cultura.id,
+          type: type as any
+        }, items);
+      }
+
+      setSubmitStatus('success');
+      toastSuccess('Cadastro rápido concluído com sucesso!');
+      
+      setTimeout(() => {
+        setSubmitStatus('idle');
+        setFormData({
+          produtor: '', fazenda: '', safra: '', cultura: '',
+          areaPlantada: '', produtividade: '', precoVenda: '',
+          custos: [{ id: gerarId(), tipo: '', descricao: '', valor: '' }],
+        });
+      }, 2000);
+    } catch (err: any) {
+      console.error(err);
+      toastError(`Erro ao salvar: ${err.message}`);
+      setSubmitStatus('error');
+      setTimeout(() => setSubmitStatus('idle'), 3000);
+    }
   };
 
   const area = parseFloat(formData.areaPlantada) || 0;
@@ -370,12 +449,9 @@ export default function InputPage() {
                 </AnimatePresence>
                 {submitStatus === 'idle' && <div />}
 
-                <button
-                  type="submit"
-                  className="bg-primary hover:bg-primary-light text-white font-semibold px-8 py-4 flex items-center gap-2 transition-all duration-300"
-                >
-                  <Save size={18} />
-                  Registrar Dados
+                <button type="submit" disabled={submitStatus === 'loading'} className="bg-primary hover:bg-primary-light text-white font-semibold py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-slate-900 shadow-lg shadow-primary/20">
+                  {submitStatus === 'loading' ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                  {submitStatus === 'loading' ? 'Salvando...' : 'Salvar Dados de Produção'}
                 </button>
               </div>
             </div>

@@ -15,23 +15,101 @@ import {
   PieChart, Pie, AreaChart, Area
 } from 'recharts';
 
-// Aggregated data from all farms and cultures
-const fazendas: Array<{ nome: string; area: number; culturas: string[] }> = [];
-
-const culturasData: Array<{ cultura: string; area: number; produtividade: number; producao: number; precoVenda: number; receitaBruta: number; custos: number; fazenda: string }> = [];
-
-const custosOperacionais = {
-  insumos: 0, servicos: 0, maoDeObra: 0,
-  armazenagem: 0, despesas: 0, consultoria: 0,
-};
+import { getFarms, getProductions, getSales, getAllCosts, type Farm, type ProductionRecord, type Sale, type CostRecord } from '@/lib/supabase/database';
 
 const cultureColors: Record<string, string> = { Soja: '#10b981', Milho: '#06b6d4', Algodão: '#f59e0b', Café: '#4f46e5', Trigo: '#ef4444' };
-
-const safras: string[] = [];
 const historicoSafras: Array<{ safra: string; receita: number; custos: number; lucro: number }> = [];
 
 export default function ConsolidatedPage() {
   const { isPrivate } = usePrivacy();
+  
+  const [loading, setLoading] = React.useState(true);
+  const [fazendasData, setFazendasData] = React.useState<Farm[]>([]);
+  const [culturasData, setCulturasData] = React.useState<Array<{ cultura: string; area: number; produtividade: number; producao: number; precoVenda: number; receitaBruta: number; custos: number; fazenda: string }>>([]);
+  const [custosOperacionais, setCustosOperacionais] = React.useState({ insumos: 0, servicos: 0, maoDeObra: 0, armazenagem: 0, despesas: 0, consultoria: 0 });
+
+  React.useEffect(() => {
+    async function loadData() {
+      try {
+        setLoading(true);
+        const [f, p, s, c] = await Promise.all([
+          getFarms(), getProductions(), getSales(), getAllCosts()
+        ]);
+        
+        setFazendasData(f);
+
+        // Aggregate by Cultura
+        const cDataMap: Record<string, { producao: number, receitaBruta: number, custos: number, fazenda: string }> = {};
+        
+        p.forEach(prod => {
+          const cult = prod.Cultura as any;
+          if (!cult) return;
+          const k = cult.id;
+          if (!cDataMap[k]) cDataMap[k] = { producao: 0, receitaBruta: 0, custos: 0, fazenda: cult.Safra?.Farm?.name || 'Geral' };
+          cDataMap[k].producao += prod.totalProduction;
+        });
+
+        s.forEach(sale => {
+          const cult = sale.Cultura as any;
+          if (!cult) return;
+          const k = cult.id;
+          if (!cDataMap[k]) cDataMap[k] = { producao: 0, receitaBruta: 0, custos: 0, fazenda: cult.Safra?.Farm?.name || 'Geral' };
+          cDataMap[k].receitaBruta += sale.grossRevenue;
+        });
+
+        const opCosts = { insumos: 0, servicos: 0, maoDeObra: 0, armazenagem: 0, despesas: 0, consultoria: 0 };
+        
+        c.forEach(cost => {
+          const totalVal = cost.items?.reduce((acc, i) => acc + i.value, 0) || 0;
+          if (cost.culturaId) {
+            if (!cDataMap[cost.culturaId]) cDataMap[cost.culturaId] = { producao: 0, receitaBruta: 0, custos: 0, fazenda: (cost.Cultura as any)?.Safra?.Farm?.name || 'Geral' };
+            cDataMap[cost.culturaId].custos += totalVal;
+          }
+          
+          if (cost.type === 'INSUMOS') opCosts.insumos += totalVal;
+          else if (cost.type === 'SERVICOS') opCosts.servicos += totalVal;
+          else if (cost.type === 'MAO_DE_OBRA') opCosts.maoDeObra += totalVal;
+          else if (cost.type === 'ARMAZENAGEM') opCosts.armazenagem += totalVal;
+          else if (cost.type === 'DESPESAS_ADMINISTRATIVAS') opCosts.despesas += totalVal;
+          else if (cost.type === 'CONSULTORIAS') opCosts.consultoria += totalVal;
+        });
+
+        const finalCulturasData = Object.keys(cDataMap).map(k => {
+          // get area from farm -> safra -> cultura
+          let area = 0;
+          let nome = 'Desconhecida';
+          f.forEach(farm => {
+            farm.safras?.forEach(safra => {
+              safra.culturas?.forEach(cult => {
+                if (cult.id === k) {
+                  area = cult.plantedArea;
+                  nome = cult.name;
+                }
+              });
+            });
+          });
+          return {
+            cultura: nome,
+            area,
+            produtividade: cDataMap[k].producao / (area || 1),
+            producao: cDataMap[k].producao,
+            precoVenda: cDataMap[k].receitaBruta / (cDataMap[k].producao || 1),
+            receitaBruta: cDataMap[k].receitaBruta,
+            custos: cDataMap[k].custos,
+            fazenda: cDataMap[k].fazenda
+          };
+        });
+
+        setCulturasData(finalCulturasData);
+        setCustosOperacionais(opCosts);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
   const consolidated = useMemo(() => {
     const producaoTotal = culturasData.reduce((s, d) => s + d.producao, 0);
@@ -112,7 +190,7 @@ export default function ConsolidatedPage() {
         {/* Info strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
           {[
-            { label: 'Fazendas', value: fazendas.length.toString() },
+            { label: 'Fazendas', value: fazendasData.length.toString() },
             { label: 'Culturas', value: Object.keys(consolidated.porCultura).length.toString() },
             { label: 'Área Total', value: `${consolidated.areaTotal.toLocaleString('pt-BR')} ha` },
             { label: 'Safra', value: '2024/25' },
