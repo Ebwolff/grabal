@@ -36,7 +36,7 @@ const entryTypes: EntryType[] = [
   { id: 'producao', category: 'OPERACIONAL', label: 'Produção Agricola', icon: Wheat, color: '#10b981' },
   { id: 'custo', category: 'OPERACIONAL', label: 'Custos e Insumos', icon: Receipt, color: '#06b6d4' },
   { id: 'servico', category: 'OPERACIONAL', label: 'Serviços Terceiros', icon: DollarSign, color: '#f59e0b' },
-  { id: 'despesa', category: 'FINANCEIRO', label: 'Despesa Adm', icon: CreditCard, color: '#8b5cf6' },
+  { id: 'despesa', category: 'FINANCEIRO', label: 'Despesa Adm', icon: CreditCard, color: '#6366f1' },
   { id: 'ativo', category: 'BALANCO', label: 'Ativo/Patrimônio', icon: Building2, color: '#ec4899' },
   { id: 'cpr', category: 'FINANCEIRO', label: 'Emissão de CPR', icon: FileCheck, color: '#14b8a6' },
   { id: 'passivo', category: 'BALANCO', label: 'Dívida/Passivo', icon: ShieldCheck, color: '#ef4444' },

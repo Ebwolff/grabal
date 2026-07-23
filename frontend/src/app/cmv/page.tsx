@@ -17,7 +17,7 @@ import {
 } from 'recharts';
 import { getProductions, getAllCosts, ProductionRecord, CostRecord } from '@/lib/supabase/database';
 
-const cultureColors = ['#10b981', '#06b6d4', '#f59e0b', '#a855f7', '#ef4444'];
+const cultureColors = ['#10b981', '#06b6d4', '#f59e0b', '#4f46e5', '#ef4444'];
 
 export default function CMVPage() {
   const { isPrivate } = usePrivacy();
@@ -124,7 +124,7 @@ export default function CMVPage() {
       { key: 'insumos', label: 'Insumos / Químicos', icon: Package, color: '#10b981', value: catMap.insumos },
       { key: 'servicos', label: 'Serv. Mecanizados', icon: Tractor, color: '#f59e0b', value: catMap.servicos },
       { key: 'maoDeObra', label: 'Mão de Obra', icon: HardHat, color: '#3b82f6', value: catMap.maoDeObra },
-      { key: 'armazenagem', label: 'Armazenagem', icon: Warehouse, color: '#8b5cf6', value: catMap.armazenagem },
+      { key: 'armazenagem', label: 'Armazenagem', icon: Warehouse, color: '#6366f1', value: catMap.armazenagem },
       { key: 'despesas', label: 'Despesas Gerais', icon: FileSpreadsheet, color: '#64748b', value: catMap.despesas },
       { key: 'consultoria', label: 'Consultoria', icon: GraduationCap, color: '#0ea5e9', value: catMap.consultoria },
       { key: 'frete', label: 'Fretes', icon: Truck, color: '#ef4444', value: catMap.frete },

@@ -27,12 +27,12 @@ interface Despesa {
 const tiposDespesa = [
   { value: 'Energia', icon: Zap, color: '#f59e0b' },
   { value: 'Combustível', icon: Fuel, color: '#ef4444' },
-  { value: 'Impostos', icon: Receipt, color: '#8b5cf6' },
+  { value: 'Impostos', icon: Receipt, color: '#6366f1' },
   { value: 'Aluguel', icon: Building, color: '#06b6d4' },
   { value: 'Telecomunicações', icon: Phone, color: '#22c55e' },
   { value: 'Frete/Logística', icon: Truck, color: '#f97316' },
   { value: 'Seguros', icon: ShieldCheck, color: '#14b8a6' },
-  { value: 'Consultoria', icon: Briefcase, color: '#a855f7' },
+  { value: 'Consultoria', icon: Briefcase, color: '#4f46e5' },
 ];
 
 const tipoColorMap: Record<string, string> = {};
@@ -89,7 +89,7 @@ export default function ExpensesPage() {
         <div className="flex gap-4 mb-6">
           <div className="flex items-center gap-2 card px-4 py-2">
             <Filter size={14} className="text-slate-500" />
-            <select value={filterTipo} onChange={(e) => setFilterTipo(e.target.value)} className="bg-transparent text-xs font-bold uppercase tracking-widest text-slate-400 focus:outline-none cursor-pointer">
+            <select aria-label="Filtrar por tipo" value={filterTipo} onChange={(e) => setFilterTipo(e.target.value)} className="bg-transparent text-xs font-bold uppercase tracking-widest text-slate-400 focus:outline-none cursor-pointer">
               <option value="">Todos Tipos</option>
               {tiposDespesa.map(t => <option key={t.value} value={t.value}>{t.value}</option>)}
             </select>

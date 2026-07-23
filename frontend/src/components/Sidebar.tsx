@@ -106,10 +106,10 @@ export function Sidebar() {
           <AnimatePresence>
             {!collapsed && (
               <motion.div initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: 'auto' }} exit={{ opacity: 0, width: 0 }} className="overflow-hidden whitespace-nowrap">
-                <h1 className="text-sm font-bold tracking-tight">
+                <div className="text-sm font-bold tracking-tight" role="img" aria-label="GramBal Logo">
                   <span className="text-primary-light">GRAM</span>
                   <span className="text-white">BAL</span>
-                </h1>
+                </div>
                 <p className="text-[7px] text-slate-500 uppercase tracking-[0.2em] -mt-0.5">Investimentos</p>
               </motion.div>
             )}

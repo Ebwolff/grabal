@@ -38,7 +38,7 @@ const setorIcons: Record<string, typeof Users> = {
   'Campo': Users, 'Máquinas': Wrench, 'Administrativo': UserCog, 'Técnico': HardHat,
 };
 const setorColors: Record<string, string> = {
-  'Campo': '#10b981', 'Máquinas': '#f59e0b', 'Administrativo': '#8b5cf6', 'Técnico': '#06b6d4',
+  'Campo': '#10b981', 'Máquinas': '#f59e0b', 'Administrativo': '#6366f1', 'Técnico': '#06b6d4',
 };
 
 export default function LaborPage() {

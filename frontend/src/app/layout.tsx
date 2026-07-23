@@ -11,6 +11,12 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "GramBal Investimentos — Inteligência Financeira Agrícola",
   description: "Plataforma de inteligência financeira para o agronegócio",
+  openGraph: {
+    title: "GramBal Investimentos — Inteligência Financeira Agrícola",
+    description: "Plataforma de inteligência financeira para o agronegócio",
+    type: "website",
+    siteName: "GramBal Investimentos",
+  },
 };
 
 export default function RootLayout({

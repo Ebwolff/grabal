@@ -28,7 +28,7 @@ const tiposConsultoria = [
   { value: 'Agronômica', icon: Leaf, color: '#10b981' },
   { value: 'Financeira', icon: BarChart3, color: '#06b6d4' },
   { value: 'Contábil', icon: Calculator, color: '#f59e0b' },
-  { value: 'Jurídica', icon: Scale, color: '#8b5cf6' },
+  { value: 'Jurídica', icon: Scale, color: '#6366f1' },
   { value: 'Ambiental', icon: Microscope, color: '#22c55e' },
   { value: 'Seguros', icon: ShieldCheck, color: '#ef4444' },
 ];

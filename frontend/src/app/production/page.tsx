@@ -35,7 +35,7 @@ const statusConfig = {
 
 const cultureColors: Record<string, string> = {
   'Soja': '#10b981', 'Milho': '#3B82F6', 'Algodão': '#F59E0B',
-  'Café': '#a855f7', 'Trigo': '#06b6d4', 'Cana-de-Açúcar': '#22c55e',
+  'Café': '#4f46e5', 'Trigo': '#06b6d4', 'Cana-de-Açúcar': '#22c55e',
 };
 
 export default function ProductionPage() {
@@ -258,7 +258,7 @@ export default function ProductionPage() {
                         <td className="text-slate-400 text-xs p-3">{item.safra}</td>
                         <td className="p-3">
                           {isEditing ? (
-                            <input type="number" value={editValues.areaPlantada}
+                            <input type="number" aria-label="Área plantada em hectares" placeholder="Área" value={editValues.areaPlantada}
                               onChange={(e) => setEditValues(p => ({ ...p, areaPlantada: e.target.value }))}
                               className="w-20 bg-industrial-bg border border-primary-light/50 px-2 py-1 text-xs font-mono rounded focus:outline-none focus-ring" />
                           ) : (
@@ -267,7 +267,7 @@ export default function ProductionPage() {
                         </td>
                         <td className="p-3">
                           {isEditing ? (
-                            <input type="number" value={editValues.produtividade}
+                            <input type="number" aria-label="Produtividade em sacas por hectare" placeholder="Produtividade" value={editValues.produtividade}
                               onChange={(e) => setEditValues(p => ({ ...p, produtividade: e.target.value }))}
                               className="w-20 bg-industrial-bg border border-primary-light/50 px-2 py-1 text-xs font-mono rounded focus:outline-none focus-ring" />
                           ) : (

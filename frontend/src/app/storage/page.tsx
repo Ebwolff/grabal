@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { MainContent } from '@/components/MainContent';
 import { PageHeader } from '@/components/PageHeader';
 import { usePrivacy } from '@/context/PrivacyContext';
@@ -13,7 +13,7 @@ import {
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { getCostsByType, deleteCost } from '@/lib/supabase/database';
+import { getCostsByType, deleteCostItem } from '@/lib/supabase/database';
 
 interface Armazenagem {
   id: string;
@@ -34,7 +34,7 @@ const culturasDisponiveis = ['Soja', 'Milho', 'Algodão', 'Café', 'Trigo'];
 
 export default function StoragePage() {
   const { isPrivate } = usePrivacy();
-  const { success, error: toastError, warning } = useToast();
+  const { success, error: toastError, warning: toastWarning } = useToast();
   
   const [data, setData] = useState<Armazenagem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +45,7 @@ export default function StoragePage() {
     fetchData();
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const costs = await getCostsByType('ARMAZENAGEM');
@@ -84,7 +84,7 @@ export default function StoragePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toastError]);
 
   const filtered = useMemo(() => {
     return data.filter(d =>
@@ -116,17 +116,12 @@ export default function StoragePage() {
     .sort((a, b) => b.valor - a.valor);
 
   const removeItem = async (id: string) => {
-    if (!confirm('Remover este item de armazenagem? (Atenção: isto apaga todo o custo associado se for o último item)')) return;
     try {
-      // For simplicity in UI, we might delete the whole cost if it's 1:1, or we'd need an endpoint just for items.
-      // Since we map 1 cost to N items, but we only have deleteCost, we'll find the parent cost and delete it.
-      // To properly delete an item we need deleteCostItem. Let's assume we delete the cost.
-      const parentCostId = data.find(d => d.id === id)?.id; // This is actually itemId right now! 
-      // Wait, we mapped id: item.id. We can't delete cost by itemId.
-      // I will implement a simpler fallback: show warning that this feature requires backend update for item-level deletion, or just hide it for now.
-      warning('A exclusão de itens individuais será habilitada na próxima atualização.');
+      await deleteCostItem(id);
+      toastWarning('Item de armazenagem removido');
+      fetchData();
     } catch (err: any) {
-      toastError('Erro ao excluir: ' + err.message);
+      toastError('Erro ao remover: ' + err.message);
     }
   };
 
@@ -150,7 +145,7 @@ export default function StoragePage() {
         <div className="flex gap-4 mb-6">
           <div className="flex items-center gap-2 card px-4 py-2">
             <Filter size={14} className="text-slate-500" />
-            <select value={filterCultura} onChange={(e) => setFilterCultura(e.target.value)} className="bg-transparent text-xs font-bold uppercase tracking-widest text-slate-400 focus:outline-none cursor-pointer">
+            <select aria-label="Filtrar por cultura" value={filterCultura} onChange={(e) => setFilterCultura(e.target.value)} className="bg-transparent text-xs font-bold uppercase tracking-widest text-slate-400 focus:outline-none cursor-pointer">
               <option value="">Todas Culturas</option>
               {culturasDisponiveis.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -158,7 +153,7 @@ export default function StoragePage() {
           </div>
           <div className="flex items-center gap-2 card px-4 py-2">
             <Warehouse size={14} className="text-slate-500" />
-            <select value={filterTipo} onChange={(e) => setFilterTipo(e.target.value)} className="bg-transparent text-xs font-bold uppercase tracking-widest text-slate-400 focus:outline-none cursor-pointer">
+            <select aria-label="Filtrar por tipo de armazenamento" value={filterTipo} onChange={(e) => setFilterTipo(e.target.value)} className="bg-transparent text-xs font-bold uppercase tracking-widest text-slate-400 focus:outline-none cursor-pointer">
               <option value="">Todos Tipos</option>
               <option value="proprio">Próprio</option>
               <option value="terceiro">Terceiro</option>

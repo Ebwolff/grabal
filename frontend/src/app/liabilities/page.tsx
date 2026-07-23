@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { MainContent } from '@/components/MainContent';
 import { PageHeader } from '@/components/PageHeader';
 import { usePrivacy } from '@/context/PrivacyContext';
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { getLiabilities, createLiability, deleteLiability, getFarmsSimple, type Liability, type Farm } from '@/lib/supabase/database';
 
 interface Passivo {
   id: string;
@@ -27,7 +28,7 @@ const tiposPassivo = [
   { value: 'Financiamento', icon: Landmark, color: '#06b6d4' },
   { value: 'Empréstimo', icon: Banknote, color: '#f59e0b' },
   { value: 'Fornecedores', icon: ShoppingCart, color: '#10b981' },
-  { value: 'Arrendamento', icon: Handshake, color: '#a855f7' },
+  { value: 'Arrendamento', icon: Handshake, color: '#4f46e5' },
   { value: 'Tributário', icon: Receipt, color: '#ef4444' },
   { value: 'Trabalhista', icon: Scale, color: '#f97316' },
 ];
@@ -42,9 +43,14 @@ const statusConfig = {
   vencido: { label: 'Vencido', cls: 'bg-red-950/40 border-red-800 text-red-400' },
 };
 
-const initialData: Passivo[] = [];
-
-function gerarId() { return Math.random().toString(36).substring(2, 9); }
+function deriveStatus(dueDate: string): 'a_vencer' | 'proximo' | 'vencido' {
+  const now = new Date();
+  const due = new Date(dueDate);
+  if (due < now) return 'vencido';
+  const diffDays = (due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+  if (diffDays <= 60) return 'proximo';
+  return 'a_vencer';
+}
 
 export default function LiabilitiesPage() {
   const { isPrivate } = usePrivacy();
@@ -54,13 +60,37 @@ export default function LiabilitiesPage() {
   const [filterTipo, setFilterTipo] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [formStatus, setFormStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [farms, setFarms] = useState<Farm[]>([]);
 
-  React.useEffect(() => {
-    // TODO: Connect to Supabase Liability table
-    setLoading(false);
-  }, []);
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [liabilities, farmsData] = await Promise.all([
+        getLiabilities(),
+        getFarmsSimple(),
+      ]);
+      setFarms(farmsData);
+      const mapped: Passivo[] = liabilities.map((l: Liability) => ({
+        id: l.id,
+        credor: l.creditor,
+        tipo: l.type,
+        valor: l.value,
+        vencimento: l.dueDate.substring(0, 7),
+        status: deriveStatus(l.dueDate),
+      }));
+      setData(mapped);
+    } catch (err: any) {
+      toastError('Erro ao carregar passivos: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [toastError]);
 
-  const [form, setForm] = useState({ credor: '', tipo: '', valor: '', vencimento: '' });
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const [form, setForm] = useState({ credor: '', tipo: '', valor: '', vencimento: '', farmId: '' });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const filtered = useMemo(() => data.filter(d => !filterTipo || d.tipo === filterTipo), [data, filterTipo]);
@@ -83,7 +113,15 @@ export default function LiabilitiesPage() {
     .map(([tipo, valor]) => ({ name: tipo, value: valor, color: tipoColorMap[tipo] || '#64748b' }))
     .sort((a, b) => b.value - a.value);
 
-  const removeItem = (id: string) => { setData(prev => prev.filter(d => d.id !== id)); toastWarning('Passivo removido'); };
+  const removeItem = async (id: string) => {
+    try {
+      await deleteLiability(id);
+      toastWarning('Passivo removido');
+      fetchData();
+    } catch (err: any) {
+      toastError('Erro ao remover: ' + err.message);
+    }
+  };
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
@@ -92,6 +130,7 @@ export default function LiabilitiesPage() {
     const val = parseFloat(form.valor);
     if (!form.valor || isNaN(val) || val <= 0) errors.valor = 'Valor positivo';
     if (!form.vencimento.trim()) errors.vencimento = 'Obrigatório';
+    if (!form.farmId) errors.farmId = 'Obrigatório';
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -99,21 +138,27 @@ export default function LiabilitiesPage() {
   const handleAdd = async () => {
     if (!validateForm()) { setFormStatus('error'); toastError('Preencha todos os campos obrigatórios'); setTimeout(() => setFormStatus('idle'), 2000); return; }
     
-    // Simulate current month if day is missing, API expects ISO date
-    const dDate = new Date(`${form.vencimento}-01T12:00:00Z`);
+    const dueDate = new Date(`${form.vencimento}-01T12:00:00Z`).toISOString();
 
-    // TODO: Connect to Supabase
-
-    const newItem: Passivo = {
-      id: gerarId(), credor: form.credor, tipo: form.tipo,
-      valor: parseFloat(form.valor), vencimento: form.vencimento, status: 'a_vencer',
-    };
-    setData(prev => [newItem, ...prev]);
-    setForm({ credor: '', tipo: '', valor: '', vencimento: '' });
-    setFormErrors({});
-    setFormStatus('success');
-    toastSuccess('Passivo registrado (Simulado)!');
-    setTimeout(() => { setFormStatus('idle'); setShowForm(false); }, 1500);
+    try {
+      await createLiability({
+        farmId: form.farmId,
+        creditor: form.credor,
+        type: form.tipo,
+        value: parseFloat(form.valor),
+        dueDate,
+      });
+      setForm({ credor: '', tipo: '', valor: '', vencimento: '', farmId: '' });
+      setFormErrors({});
+      setFormStatus('success');
+      toastSuccess('Passivo registrado!');
+      fetchData();
+      setTimeout(() => { setFormStatus('idle'); setShowForm(false); }, 1500);
+    } catch (err: any) {
+      setFormStatus('error');
+      toastError('Erro ao registrar: ' + err.message);
+      setTimeout(() => setFormStatus('idle'), 2000);
+    }
   };
 
   const fmt = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
@@ -137,7 +182,16 @@ export default function LiabilitiesPage() {
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-6 overflow-hidden">
               <div className="bg-industrial-card border border-red-500/30 p-6">
                 <h4 className="font-bold uppercase tracking-tight text-sm mb-4">Registrar Passivo</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 items-end">
+                  <div>
+                    <label className="text-[9px] font-semibold text-slate-500 block mb-1">Fazenda</label>
+                    <select value={form.farmId}
+                      onChange={(e) => { setForm(p => ({ ...p, farmId: e.target.value })); setFormErrors(p => { const n = { ...p }; delete n.farmId; return n; }); }}
+                      className={cn("w-full bg-slate-900 border px-3 py-2 text-sm focus:outline-none focus:border-red-400", formErrors.farmId ? "border-red-500/60" : "border-industrial-border")}>
+                      <option value="">Selecione</option>
+                      {farms.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                    </select>
+                  </div>
                   <div>
                     <label className="text-[9px] font-semibold text-slate-500 block mb-1">Credor</label>
                     <input value={form.credor}

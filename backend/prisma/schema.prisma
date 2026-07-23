@@ -32,6 +32,8 @@ model User {
   economicGroup   EconomicGroup  @relation(fields: [economicGroupId], references: [id])
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+
+  @@index([economicGroupId])
 }
 
 enum Role {
@@ -53,6 +55,8 @@ model Producer {
   updatedAt       DateTime       @updatedAt
 
   farms           Farm[]
+
+  @@index([economicGroupId])
 }
 
 model Farm {
@@ -71,6 +75,8 @@ model Farm {
   liabilities     Liability[]
   cprs            CPR[]
   guarantees      Guarantee[]
+
+  @@index([producerId])
 }
 
 model Safra {
@@ -83,6 +89,8 @@ model Safra {
   updatedAt   DateTime  @updatedAt
 
   culturas    Cultura[]
+
+  @@index([farmId])
 }
 
 model Cultura {
@@ -99,6 +107,8 @@ model Cultura {
   productions   Production[]
   costs         Cost[]
   revenues      Revenue[]
+
+  @@index([safraId])
 }
 
 model Production {
@@ -110,6 +120,8 @@ model Production {
   totalProduction Float
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  @@index([culturaId])
 }
 
 model Cost {
@@ -121,6 +133,8 @@ model Cost {
   updatedAt   DateTime @updatedAt
 
   items       CostItem[]
+
+  @@index([culturaId])
 }
 
 enum CostType {
@@ -142,6 +156,8 @@ model CostItem {
   value       Float
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([costId])
 }
 
 model Revenue {
@@ -153,6 +169,8 @@ model Revenue {
   grossRevenue  Float
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  @@index([culturaId])
 }
 
 model Asset {
@@ -164,6 +182,8 @@ model Asset {
   value       Float
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([farmId])
 }
 
 model Liability {
@@ -176,6 +196,8 @@ model Liability {
   dueDate     DateTime
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([farmId])
 }
 
 model CPR {
@@ -189,6 +211,8 @@ model CPR {
   dueDate             DateTime
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+
+  @@index([farmId])
 }
 
 model Guarantee {
@@ -199,6 +223,8 @@ model Guarantee {
   value       Float
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([farmId])
 }
 
 model AuditTrail {

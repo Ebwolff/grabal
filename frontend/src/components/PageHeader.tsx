@@ -15,9 +15,9 @@ export function PageHeader({ title, accent, description, badge }: PageHeaderProp
     <motion.header initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-white">
+          <h1 className="text-2xl font-bold tracking-tight text-white">
             {title} {accent && <span className="text-primary-light">{accent}</span>}
-          </h2>
+          </h1>
           {description && (
             <p className="text-xs text-slate-500 mt-1 max-w-xl">{description}</p>
           )}

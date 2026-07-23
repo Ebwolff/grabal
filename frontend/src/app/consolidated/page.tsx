@@ -25,7 +25,7 @@ const custosOperacionais = {
   armazenagem: 0, despesas: 0, consultoria: 0,
 };
 
-const cultureColors: Record<string, string> = { Soja: '#10b981', Milho: '#06b6d4', Algodão: '#f59e0b', Café: '#a855f7', Trigo: '#ef4444' };
+const cultureColors: Record<string, string> = { Soja: '#10b981', Milho: '#06b6d4', Algodão: '#f59e0b', Café: '#4f46e5', Trigo: '#ef4444' };
 
 const safras: string[] = [];
 const historicoSafras: Array<{ safra: string; receita: number; custos: number; lucro: number }> = [];
@@ -297,7 +297,7 @@ export default function ConsolidatedPage() {
                 { label: 'Insumos', value: custosOperacionais.insumos, color: '#f97316' },
                 { label: 'Serviços', value: custosOperacionais.servicos, color: '#f59e0b' },
                 { label: 'Mão de Obra', value: custosOperacionais.maoDeObra, color: '#06b6d4' },
-                { label: 'Armazenagem', value: custosOperacionais.armazenagem, color: '#a855f7' },
+                { label: 'Armazenagem', value: custosOperacionais.armazenagem, color: '#4f46e5' },
                 { label: 'Despesas Adm.', value: custosOperacionais.despesas, color: '#64748b' },
                 { label: 'Consultoria', value: custosOperacionais.consultoria, color: '#22c55e' },
               ].map(c => (

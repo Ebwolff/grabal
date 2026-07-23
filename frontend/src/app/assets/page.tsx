@@ -30,7 +30,7 @@ const tiposAtivo = [
   { value: 'Máquinas', icon: Tractor, color: '#06b6d4' },
   { value: 'Equipamentos', icon: Wrench, color: '#f59e0b' },
   { value: 'Irrigação', icon: Droplets, color: '#22c55e' },
-  { value: 'Benfeitorias', icon: Fence, color: '#a855f7' },
+  { value: 'Benfeitorias', icon: Fence, color: '#4f46e5' },
   { value: 'Armazéns', icon: Warehouse, color: '#ef4444' },
   { value: 'Tecnologia', icon: Cpu, color: '#f97316' },
 ];
@@ -89,7 +89,7 @@ export default function AssetsPage() {
         <div className="flex gap-4 mb-6">
           <div className="flex items-center gap-2 card px-4 py-2">
             <Filter size={14} className="text-slate-500" />
-            <select value={filterTipo} onChange={(e) => setFilterTipo(e.target.value)} className="bg-transparent text-xs font-bold uppercase tracking-widest text-slate-400 focus:outline-none cursor-pointer">
+            <select aria-label="Filtrar por tipo de ativo" value={filterTipo} onChange={(e) => setFilterTipo(e.target.value)} className="bg-transparent text-xs font-bold uppercase tracking-widest text-slate-400 focus:outline-none cursor-pointer">
               <option value="">Todos Tipos</option>
               {tiposAtivo.map(t => <option key={t.value} value={t.value}>{t.value}</option>)}
             </select>

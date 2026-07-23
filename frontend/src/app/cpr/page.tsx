@@ -31,7 +31,7 @@ interface CPRLocal {
 }
 
 const culturas = ['Soja', 'Milho', 'Algodão', 'Café', 'Trigo'];
-const cultureColors: Record<string, string> = { Soja: '#10b981', Milho: '#06b6d4', Algodão: '#f59e0b', Café: '#a855f7', Trigo: '#ef4444' };
+const cultureColors: Record<string, string> = { Soja: '#10b981', Milho: '#06b6d4', Algodão: '#f59e0b', Café: '#4f46e5', Trigo: '#ef4444' };
 
 // Production data for risk calc
 const producaoTotal: Record<string, number> = {};

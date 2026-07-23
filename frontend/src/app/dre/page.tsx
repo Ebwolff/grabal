@@ -31,7 +31,7 @@ interface DREData {
   impostos: number;
 }
 
-const cultureColors: Record<string, string> = { Soja: '#10b981', Milho: '#06b6d4', Algodão: '#f59e0b', Café: '#a855f7', Trigo: '#ef4444' };
+const cultureColors: Record<string, string> = { Soja: '#10b981', Milho: '#06b6d4', Algodão: '#f59e0b', Café: '#4f46e5', Trigo: '#ef4444' };
 
 export default function DREPage() {
   const { isPrivate } = usePrivacy();
@@ -215,8 +215,8 @@ export default function DREPage() {
     { name: 'Desp. Admin.', value: -consolidated.despAdmin, color: '#f59e0b' },
     { name: 'EBITDA', value: consolidated.ebitda, color: '#06b6d4' },
     { name: 'Deprec.', value: -consolidated.depAmort, color: '#64748b' },
-    { name: 'Desp. Fin.', value: -consolidated.despFin, color: '#8b5cf6' },
-    { name: 'Impostos', value: -consolidated.impostos, color: '#a855f7' },
+    { name: 'Desp. Fin.', value: -consolidated.despFin, color: '#6366f1' },
+    { name: 'Impostos', value: -consolidated.impostos, color: '#4f46e5' },
     { name: 'Lucro Líq.', value: consolidated.lucroLiquido, color: '#22c55e' },
   ];
 
@@ -257,7 +257,7 @@ export default function DREPage() {
             { label: 'Receita Líquida', value: consolidated.receitaLiquida, color: '#10b981' },
             { label: 'Lucro Bruto', value: consolidated.lucroBruto, color: '#22c55e' },
             { label: 'EBITDA', value: consolidated.ebitda, color: '#06b6d4' },
-            { label: 'Lucro Líquido', value: consolidated.lucroLiquido, color: '#a855f7' },
+            { label: 'Lucro Líquido', value: consolidated.lucroLiquido, color: '#4f46e5' },
             { label: 'Margem Líquida', value: consolidated.margemLiquida, color: '#f59e0b', pct: true },
           ].map((kpi, i) => (
             <motion.div key={kpi.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
@@ -348,7 +348,7 @@ export default function DREPage() {
                 {[
                   { label: 'Margem Bruta', value: consolidated.margemBruta, color: '#10b981' },
                   { label: 'Margem EBITDA', value: consolidated.margemEbitda, color: '#06b6d4' },
-                  { label: 'Margem Líquida', value: consolidated.margemLiquida, color: '#a855f7' },
+                  { label: 'Margem Líquida', value: consolidated.margemLiquida, color: '#4f46e5' },
                 ].map(m => (
                   <div key={m.label}>
                     <div className="flex justify-between mb-1">

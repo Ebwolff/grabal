@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { MainContent } from '@/components/MainContent';
 import { PageHeader } from '@/components/PageHeader';
 import { usePrivacy } from '@/context/PrivacyContext';
@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { getCostsByType, deleteCostItem } from '@/lib/supabase/database';
 import { motion } from 'framer-motion';
 
 interface Servico {
@@ -50,53 +50,38 @@ export default function ServicesPage() {
   const [filterCultura, setFilterCultura] = useState('');
   const [filterTipo, setFilterTipo] = useState('');
 
-  React.useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const supabase = createClient();
-        const { data: json, error } = await supabase
-          .from('Cost')
-          .select(`
-            id, type,
-            items:CostItem(*),
-            cultura:Cultura(
-              name,
-              safra:Safra(
-                year,
-                farm:Farm(name)
-              )
-            )
-          `)
-          .eq('type', 'SERVICOS');
+  const fetchServices = useCallback(async () => {
+    try {
+      const costs = await getCostsByType('SERVICOS');
 
-        if (error) throw error;
-
-        const servicos = (json || [])
-          .flatMap((c: any) => (c.items || []).map((item: any) => {
-            let tipo: Servico['tipoServico'] = 'plantio';
-            if (item.description.toLowerCase().includes('pulveriz') || item.description.toLowerCase().includes('aplica') || item.description.toLowerCase().includes('desfolha')) tipo = 'pulverizacao';
-            if (item.description.toLowerCase().includes('colheita')) tipo = 'colheita';
-            
-            return {
-              id: item.id,
-              cultura: c.cultura?.name || 'Desconhecida',
-              tipoServico: tipo,
-              descricao: item.description,
-              custo: item.value,
-              safra: c.cultura?.safra?.year || '-',
-              fazenda: c.cultura?.safra?.farm?.name || '-'
-            };
-          }));
-        setData(servicos);
-      } catch (err) {
-        console.error(err);
-        toastError('Erro ao carregar serviços do Supabase');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchServices();
+      const servicos = (costs || [])
+        .flatMap((c: any) => (c.items || []).map((item: any) => {
+          let tipo: Servico['tipoServico'] = 'plantio';
+          if (item.description.toLowerCase().includes('pulveriz') || item.description.toLowerCase().includes('aplica') || item.description.toLowerCase().includes('desfolha')) tipo = 'pulverizacao';
+          if (item.description.toLowerCase().includes('colheita')) tipo = 'colheita';
+          
+          return {
+            id: item.id,
+            cultura: c.Cultura?.name || 'Desconhecida',
+            tipoServico: tipo,
+            descricao: item.description,
+            custo: item.value,
+            safra: c.Cultura?.Safra?.year || '-',
+            fazenda: c.Cultura?.Safra?.Farm?.name || '-'
+          };
+        }));
+      setData(servicos);
+    } catch (err) {
+      console.error(err);
+      toastError('Erro ao carregar serviços do Supabase');
+    } finally {
+      setLoading(false);
+    }
   }, [toastError]);
+
+  React.useEffect(() => {
+    fetchServices();
+  }, [fetchServices]);
 
   const filtered = useMemo(() => {
     return data.filter(d =>
@@ -126,7 +111,15 @@ export default function ServicesPage() {
     .map(([cultura, valor]) => ({ cultura, valor }))
     .sort((a, b) => b.valor - a.valor);
 
-  const removeItem = (id: string) => { setData(prev => prev.filter(d => d.id !== id)); toastWarning('Serviço removido'); };
+  const removeItem = async (id: string) => {
+    try {
+      await deleteCostItem(id);
+      toastWarning('Serviço removido');
+      fetchServices();
+    } catch (err: any) {
+      toastError('Erro ao remover: ' + err.message);
+    }
+  };
 
   const fmt = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
@@ -149,7 +142,7 @@ export default function ServicesPage() {
         <div className="flex gap-4 mb-6">
           <div className="flex items-center gap-2 card px-4 py-2">
             <Filter size={14} className="text-slate-500" />
-            <select value={filterCultura} onChange={(e) => setFilterCultura(e.target.value)} className="bg-transparent text-xs font-bold uppercase tracking-widest text-slate-400 focus:outline-none cursor-pointer">
+            <select aria-label="Filtrar por cultura" value={filterCultura} onChange={(e) => setFilterCultura(e.target.value)} className="bg-transparent text-xs font-bold uppercase tracking-widest text-slate-400 focus:outline-none cursor-pointer">
               <option value="">Todas Culturas</option>
               {culturasDisponiveis.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -157,7 +150,7 @@ export default function ServicesPage() {
           </div>
           <div className="flex items-center gap-2 card px-4 py-2">
             <Tractor size={14} className="text-slate-500" />
-            <select value={filterTipo} onChange={(e) => setFilterTipo(e.target.value)} className="bg-transparent text-xs font-bold uppercase tracking-widest text-slate-400 focus:outline-none cursor-pointer">
+            <select aria-label="Filtrar por tipo de serviço" value={filterTipo} onChange={(e) => setFilterTipo(e.target.value)} className="bg-transparent text-xs font-bold uppercase tracking-widest text-slate-400 focus:outline-none cursor-pointer">
               <option value="">Todos Serviços</option>
               {tiposDisponiveis.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>

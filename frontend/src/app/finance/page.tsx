@@ -147,7 +147,7 @@ export default function FinancePage() {
       { label: 'Lucro Líquido', value: lucroLiquido, pct: receitaBruta > 0 ? Math.round((lucroLiquido / receitaBruta) * 100) : 0 },
     ];
 
-    const catColors = { Insumos: '#10b981', Servicos: '#f59e0b', MaoDeObra: '#3b82f6', Armazenagem: '#8b5cf6', Despesas: '#64748b' };
+    const catColors = { Insumos: '#10b981', Servicos: '#f59e0b', MaoDeObra: '#3b82f6', Armazenagem: '#6366f1', Despesas: '#64748b' };
     const costBreakdown = Object.entries(catMap).filter(([_, v]) => v > 0).map(([name, value]) => ({
       name, value, color: catColors[name as keyof typeof catColors] || '#000'
     })).sort((a, b) => b.value - a.value);

@@ -155,12 +155,12 @@ export default function ExecutiveDashboard() {
       lucro: monthMap[m].receita - monthMap[m].custos
     }));
 
-    const cultureColorsList = ['#10b981', '#06b6d4', '#f59e0b', '#a855f7', '#ef4444'];
+    const cultureColorsList = ['#10b981', '#06b6d4', '#f59e0b', '#4f46e5', '#ef4444'];
     const producaoCultura = Object.entries(prodCultMap).map(([name, sacas], i) => ({
       name, sacas, color: cultureColorsList[i % cultureColorsList.length]
     })).sort((a,b) => b.sacas - a.sacas);
 
-    const catColors = { Insumos: '#10b981', Servicos: '#f59e0b', MaoDeObra: '#3b82f6', Armazenagem: '#8b5cf6', Outros: '#64748b' };
+    const catColors = { Insumos: '#10b981', Servicos: '#f59e0b', MaoDeObra: '#3b82f6', Armazenagem: '#6366f1', Outros: '#64748b' };
     const custosCat = Object.entries(costCatMap).filter(([_, v]) => v > 0).map(([name, value]) => ({
       name, value, color: catColors[name as keyof typeof catColors] || '#000'
     })).sort((a,b) => b.value - a.value);

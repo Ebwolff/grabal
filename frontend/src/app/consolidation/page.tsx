@@ -19,7 +19,7 @@ import { getProductions, getAllCosts, ProductionRecord, CostRecord } from '@/lib
 
 const monthlyData: Array<{ mes: string; receita: number; custo: number }> = [];
 
-const cultureColors = ['#10b981', '#06b6d4', '#f59e0b', '#a855f7', '#ef4444', '#f97316', '#8b5cf6'];
+const cultureColors = ['#10b981', '#06b6d4', '#f59e0b', '#4f46e5', '#ef4444', '#f97316', '#6366f1'];
 
 export default function ConsolidationPage() {
   const { isPrivate } = usePrivacy();
@@ -154,7 +154,7 @@ export default function ConsolidationPage() {
     { name: 'Deprec.', value: -financials.depreciation, color: '#f59e0b' },
     { name: 'EBITDA', value: financials.ebitda, color: '#06b6d4' },
     { name: 'Desp. Fin.', value: -financials.financialExpenses, color: '#f97316' },
-    { name: 'Impostos', value: -financials.taxes, color: '#8b5cf6' },
+    { name: 'Impostos', value: -financials.taxes, color: '#6366f1' },
     { name: 'Lucro Líq.', value: financials.lucroLiquido, color: '#10b981' },
   ];
 
@@ -190,7 +190,7 @@ export default function ConsolidationPage() {
             { label: 'Lucro Bruto', value: fmtM(financials.lucroBruto), icon: TrendingUp, color: '#10b981', trend: null },
             { label: 'EBITDA', value: fmtM(financials.ebitda), icon: BarChart3, color: '#06b6d4', trend: null },
             { label: 'Lucro Líquido', value: fmtM(financials.lucroLiquido), icon: Landmark, color: '#22c55e', trend: null },
-            { label: 'Margem Líquida', value: `${financials.margemLiquida.toFixed(1)}%`, icon: PieIcon, color: '#a855f7', trend: null },
+            { label: 'Margem Líquida', value: `${financials.margemLiquida.toFixed(1)}%`, icon: PieIcon, color: '#4f46e5', trend: null },
           ].map((kpi, i) => {
             const Icon = kpi.icon;
             const isUp = kpi.trend ? (kpi.trend as string).startsWith('+') : false;
@@ -284,7 +284,7 @@ export default function ConsolidationPage() {
                 {[
                   { label: 'Margem Bruta', value: financials.margemBruta, color: '#10b981' },
                   { label: 'Margem EBITDA', value: financials.margemEbitda, color: '#06b6d4' },
-                  { label: 'Margem Líquida', value: financials.margemLiquida, color: '#a855f7' },
+                  { label: 'Margem Líquida', value: financials.margemLiquida, color: '#4f46e5' },
                 ].map(m => (
                   <div key={m.label}>
                     <div className="flex justify-between mb-1">

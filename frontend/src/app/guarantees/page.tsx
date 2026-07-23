@@ -26,7 +26,7 @@ const tiposGarantia = [
   { value: 'Terra', icon: MapPin, color: '#10b981' },
   { value: 'Máquinas', icon: Tractor, color: '#06b6d4' },
   { value: 'Produção Futura', icon: Wheat, color: '#f59e0b' },
-  { value: 'Imóvel Rural', icon: Home, color: '#a855f7' },
+  { value: 'Imóvel Rural', icon: Home, color: '#4f46e5' },
   { value: 'Título / Penhor', icon: FileCheck, color: '#ef4444' },
 ];
 
