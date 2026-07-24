@@ -7,7 +7,7 @@ import {
   Database, ClipboardEdit, Wheat, Package, Tractor, HardHat, Warehouse,
   FileSpreadsheet, GraduationCap, Target, Landmark, Layers, Building2,
   CreditCard, ShieldCheck, FileCheck, Calculator, Star, Gauge,
-  ChevronLeft, ChevronRight, type LucideIcon
+  ChevronLeft, ChevronRight, Truck, type LucideIcon
 } from 'lucide-react';
 import { usePrivacy } from '@/context/PrivacyContext';
 import { useSidebar } from '@/context/SidebarContext';
@@ -45,6 +45,7 @@ const menuGroups: MenuGroup[] = [
       { name: 'Serviços', href: '/services', icon: Tractor },
       { name: 'Mão de Obra', href: '/labor', icon: HardHat },
       { name: 'Armazenagem', href: '/storage', icon: Warehouse },
+      { name: 'Logística', href: '/freight', icon: Truck },
       { name: 'Despesas', href: '/expenses', icon: FileSpreadsheet },
       { name: 'Consultoria', href: '/consulting', icon: GraduationCap },
     ]

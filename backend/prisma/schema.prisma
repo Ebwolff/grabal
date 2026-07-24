@@ -75,6 +75,7 @@ model Farm {
   liabilities     Liability[]
   cprs            CPR[]
   guarantees      Guarantee[]
+  laborDetails    LaborDetails[]
 
   @@index([producerId])
 }
@@ -107,6 +108,7 @@ model Cultura {
   productions   Production[]
   costs         Cost[]
   revenues      Revenue[]
+  freights      Freight[]
 
   @@index([safraId])
 }
@@ -154,6 +156,15 @@ model CostItem {
   cost        Cost     @relation(fields: [costId], references: [id], onDelete: Cascade)
   description String
   value       Float
+
+  // Spreadsheet parity fields
+  produto       String?
+  variedade     String?
+  unidade       String?
+  quantidade    Float?
+  precoUnitario Float?
+  fornecedor    String?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -167,10 +178,53 @@ model Revenue {
   unitPrice     Float
   volumeSold    Float
   grossRevenue  Float
+
+  // Spreadsheet parity fields
+  numeroContrato String?
+  trading        String?
+  tipoContrato   String?
+  dataEntrega    DateTime?
+  dataRecebimento DateTime?
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([culturaId])
+}
+
+model Freight {
+  id              String   @id @default(uuid())
+  culturaId       String
+  cultura         Cultura  @relation(fields: [culturaId], references: [id], onDelete: Cascade)
+  tipo            String
+  condicao        String
+  quantidadeTon   Float
+  custoPorTon     Float?
+  distanciaPorto  Float?
+  precoDiesel     Float?
+  consumoEstimado Float?
+  valorTotal      Float
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([culturaId])
+}
+
+model LaborDetails {
+  id                  String   @id @default(uuid())
+  farmId              String
+  farm                Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  categoria           String
+  quantidadeFuncionarios Int?
+  salarioAnual        Float
+  impostos            Float?
+  valorTotal          Float
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([farmId])
 }
 
 model Asset {

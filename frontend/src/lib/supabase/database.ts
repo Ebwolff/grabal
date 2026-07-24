@@ -122,8 +122,43 @@ export interface CostItem {
   costId: string
   description: string
   value: number
+  produto?: string | null
+  variedade?: string | null
+  unidade?: string | null
+  quantidade?: number | null
+  precoUnitario?: number | null
+  fornecedor?: string | null
   createdAt: string
   updatedAt: string
+}
+
+export interface Freight {
+  id: string
+  culturaId: string
+  tipo: string
+  condicao: string
+  quantidadeTon: number
+  custoPorTon?: number | null
+  distanciaPorto?: number | null
+  precoDiesel?: number | null
+  consumoEstimado?: number | null
+  valorTotal: number
+  createdAt: string
+  updatedAt: string
+  Cultura?: any
+}
+
+export interface LaborDetails {
+  id: string
+  farmId: string
+  categoria: string
+  quantidadeFuncionarios?: number | null
+  salarioAnual: number
+  impostos?: number | null
+  valorTotal: number
+  createdAt: string
+  updatedAt: string
+  Farm?: any
 }
 
 // ─── Database Service ──────────────────────────────────────
@@ -424,6 +459,11 @@ export interface Sale {
   unitPrice: number;
   volumeSold: number;
   grossRevenue: number;
+  numeroContrato?: string | null;
+  trading?: string | null;
+  tipoContrato?: string | null;
+  dataEntrega?: string | null;
+  dataRecebimento?: string | null;
   createdAt: string;
   updatedAt: string;
   Cultura?: any;

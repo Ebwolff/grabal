@@ -34,6 +34,7 @@ interface EntryType {
 
 const entryTypes: EntryType[] = [
   { id: 'producao', category: 'OPERACIONAL', label: 'Produção Agricola', icon: Wheat, color: '#10b981' },
+  { id: 'venda', category: 'FINANCEIRO', label: 'Comercialização', icon: DollarSign, color: '#f59e0b' },
   { id: 'custo', category: 'OPERACIONAL', label: 'Custos e Insumos', icon: Receipt, color: '#06b6d4' },
   { id: 'servico', category: 'OPERACIONAL', label: 'Serviços Terceiros', icon: DollarSign, color: '#f59e0b' },
   { id: 'despesa', category: 'FINANCEIRO', label: 'Despesa Adm', icon: CreditCard, color: '#6366f1' },
@@ -124,7 +125,17 @@ function EntriesContent() {
     comprador: '',
     volume: '',
     recurrente: false,
-    vidaUtil: ''
+    vidaUtil: '',
+    produto: '',
+    variedade: '',
+    unidade: '',
+    quantidade: '',
+    precoUnitario: '',
+    fornecedor: '',
+    numeroContrato: '',
+    trading: '',
+    tipoContrato: '',
+    dataEntrega: ''
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -189,6 +200,10 @@ function EntriesContent() {
           endpoint = 'production';
           payload = { culturaId: form.culturaId, area: parseFloat(form.area), productivity: parseFloat(form.productivity), totalProduction: parseFloat(form.area) * parseFloat(form.productivity), createdAt: basePayload.date };
           break;
+        case 'venda':
+          endpoint = 'sales';
+          payload = { culturaId: form.culturaId, unitPrice: parseFloat(form.precoUnitario) || 0, volumeSold: parseFloat(form.quantidade) || 0, grossRevenue: (parseFloat(form.precoUnitario) || 0) * (parseFloat(form.quantidade) || 0), numeroContrato: form.numeroContrato, trading: form.trading, tipoContrato: form.tipoContrato, dataEntrega: form.dataEntrega ? new Date(form.dataEntrega).toISOString() : null, createdAt: basePayload.date };
+          break;
         case 'despesa':
         case 'custo':
           endpoint = 'expenses';
@@ -221,10 +236,24 @@ function EntriesContent() {
         case 'producao':
           await createProduction(payload);
           break;
+        case 'venda':
+          // @ts-ignore
+          await (await import('@/lib/supabase/database')).createSale(payload);
+          break;
         case 'despesa':
         case 'custo':
         case 'servico':
-          await createCostWithItems(payload, [{ description: form.description, value: basePayload.value }]);
+          const items = [{ 
+            description: form.description, 
+            value: basePayload.value,
+            produto: selectedType === 'custo' ? form.produto : null,
+            variedade: selectedType === 'custo' ? form.variedade : null,
+            unidade: selectedType === 'custo' ? form.unidade : null,
+            quantidade: selectedType === 'custo' ? parseFloat(form.quantidade) || null : null,
+            precoUnitario: selectedType === 'custo' ? parseFloat(form.precoUnitario) || null : null,
+            fornecedor: (selectedType === 'custo' || selectedType === 'servico') ? form.fornecedor : null
+          }];
+          await createCostWithItems(payload, items);
           break;
         case 'ativo':
           await createAsset(payload);
@@ -455,9 +484,32 @@ function EntriesContent() {
                       </>
                     )}
 
+                    {selectedType === 'venda' && (
+                      <>
+                        <InputField label="Quantidade / Volume" type="number" value={form.quantidade} onChange={(v: string) => setForm(p => ({...p, quantidade: v}))} placeholder="Ex: 5000" />
+                        <InputField label="Preço Unitário (R$)" type="number" value={form.precoUnitario} onChange={(v: string) => setForm(p => ({...p, precoUnitario: v}))} prefix="R$" />
+                        <InputField label="Número do Contrato" value={form.numeroContrato} onChange={(v: string) => setForm(p => ({...p, numeroContrato: v}))} placeholder="Opcional" />
+                        <InputField label="Trading / Comprador" value={form.trading} onChange={(v: string) => setForm(p => ({...p, trading: v}))} placeholder="Ex: Bunge, Cargill" />
+                        <InputField label="Tipo de Contrato" value={form.tipoContrato} onChange={(v: string) => setForm(p => ({...p, tipoContrato: v}))} placeholder="Ex: Físico, Travado" />
+                        <InputField label="Data de Entrega" type="date" value={form.dataEntrega} onChange={(v: string) => setForm(p => ({...p, dataEntrega: v}))} />
+                      </>
+                    )}
+
                     {['custo', 'servico', 'despesa'].includes(selectedType) && (
                       <>
-                        <InputField label="Valor (R$)" type="number" value={form.value} onChange={(v: string) => setForm(p => ({...p, value: v}))} prefix="R$" error={errors.value} />
+                        {selectedType === 'custo' && (
+                          <>
+                            <InputField label="Produto" value={form.produto} onChange={(v: string) => setForm(p => ({...p, produto: v}))} placeholder="Ex: Semente, Fertilizante" />
+                            <InputField label="Variedade" value={form.variedade} onChange={(v: string) => setForm(p => ({...p, variedade: v}))} placeholder="Opcional" />
+                            <InputField label="Unidade" value={form.unidade} onChange={(v: string) => setForm(p => ({...p, unidade: v}))} placeholder="Ex: sc, ton, L" />
+                            <InputField label="Quantidade" type="number" value={form.quantidade} onChange={(v: string) => setForm(p => ({...p, quantidade: v}))} />
+                            <InputField label="Preço Unitário (R$)" type="number" value={form.precoUnitario} onChange={(v: string) => setForm(p => ({...p, precoUnitario: v}))} prefix="R$" />
+                          </>
+                        )}
+                        {['custo', 'servico'].includes(selectedType) && (
+                          <InputField label="Fornecedor" value={form.fornecedor} onChange={(v: string) => setForm(p => ({...p, fornecedor: v}))} placeholder="Nome do Fornecedor" />
+                        )}
+                        <InputField label="Valor Total (R$)" type="number" value={form.value} onChange={(v: string) => setForm(p => ({...p, value: v}))} prefix="R$" error={errors.value} />
                         <div className="flex flex-col">
                           <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest block mb-2">Recorrência</label>
                           <button 

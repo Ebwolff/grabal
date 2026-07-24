@@ -24,20 +24,20 @@ interface PillarScore {
   metrics: { label: string; value: string; ideal: string; status: 'good' | 'ok' | 'bad' }[];
 }
 
-function calcScore(value: number, thresholds: [number, number, number, number]): { score: number; grade: string; color: string } {
-  // thresholds = [A, B, C boundary] - above first = A, etc.
-  if (value >= thresholds[0]) return { score: Math.min(100, 70 + (value - thresholds[0]) / thresholds[0] * 30), grade: 'A', color: '#10b981' };
-  if (value >= thresholds[1]) return { score: 50 + (value - thresholds[1]) / (thresholds[0] - thresholds[1]) * 20, grade: 'B', color: '#06b6d4' };
-  if (value >= thresholds[2]) return { score: 30 + (value - thresholds[2]) / (thresholds[1] - thresholds[2]) * 20, grade: 'C', color: '#f59e0b' };
-  return { score: Math.max(5, value / thresholds[2] * 30), grade: 'D', color: '#ef4444' };
+function calcScore(value: number, thresholds: [number, number, number]): { score: number; grade: string; color: string } {
+  // Matriz Atuarial: Thresholds baseados na planilha (ex: 245/200/117)
+  if (value >= thresholds[0]) return { score: 95, grade: 'A', color: '#10b981' };
+  if (value >= thresholds[1]) return { score: 75, grade: 'B', color: '#06b6d4' };
+  if (value >= thresholds[2]) return { score: 50, grade: 'C', color: '#f59e0b' };
+  return { score: 20, grade: 'D', color: '#ef4444' };
 }
 
-function calcScoreInverse(value: number, thresholds: [number, number, number, number]): { score: number; grade: string; color: string } {
-  // Lower is better
-  if (value <= thresholds[0]) return { score: Math.min(100, 70 + (thresholds[0] - value) / thresholds[0] * 30), grade: 'A', color: '#10b981' };
-  if (value <= thresholds[1]) return { score: 50 + (thresholds[1] - value) / (thresholds[1] - thresholds[0]) * 20, grade: 'B', color: '#06b6d4' };
-  if (value <= thresholds[2]) return { score: 30 + (thresholds[2] - value) / (thresholds[2] - thresholds[1]) * 20, grade: 'C', color: '#f59e0b' };
-  return { score: Math.max(5, thresholds[2] / value * 30), grade: 'D', color: '#ef4444' };
+function calcScoreInverse(value: number, thresholds: [number, number, number]): { score: number; grade: string; color: string } {
+  // Lower is better (Perda Esperada)
+  if (value <= thresholds[2]) return { score: 95, grade: 'A', color: '#10b981' };
+  if (value <= thresholds[1]) return { score: 75, grade: 'B', color: '#06b6d4' };
+  if (value <= thresholds[0]) return { score: 50, grade: 'C', color: '#f59e0b' };
+  return { score: 20, grade: 'D', color: '#ef4444' };
 }
 
 const gradeColors: Record<string, string> = { A: '#10b981', B: '#06b6d4', C: '#f59e0b', D: '#ef4444' };
@@ -107,25 +107,25 @@ export default function RatingPage() {
     const liquidezCorrente = d.ativoCirculante / d.passivoCirculante;
     const liquidezSeca = (d.ativoCirculante - d.estoquesValor) / d.passivoCirculante;
     const liquidezImediata = d.disponivel / d.passivoCirculante;
-    const liqScore = calcScore(liquidezCorrente, [2.0, 1.5, 1.0, 0.5]);
+    const liqScore = calcScore(liquidezCorrente, [2.0, 1.5, 1.0]);
 
     // 2. LEVERAGE
     const endividamento = d.passivoTotal / d.ativoTotal;
     const alavancagem = d.passivoTotal / d.patrimonioLiquido;
     const divEbitda = d.divLiquida / d.ebitda;
-    const alavScore = calcScoreInverse(alavancagem, [0.15, 0.25, 0.40, 0.6]);
+    const alavScore = calcScoreInverse(alavancagem, [0.15, 0.25, 0.40]);
 
     // 3. PROFITABILITY
     const margemLiquida = d.lucroLiquido / d.receitaTotal;
     const margemOperacional = d.lucroOperacional / d.receitaTotal;
     const margemEbitda = d.ebitda / d.receitaTotal;
     const roe = d.lucroLiquido / d.patrimonioLiquido;
-    const rentScore = calcScore(margemLiquida, [0.40, 0.25, 0.10, 0.0]);
+    const rentScore = calcScore(margemLiquida, [0.40, 0.25, 0.10]);
 
     // 4. GUARANTEES
     const cobertura = d.garantiasAceitas / d.passivoTotal;
     const garantiaRatio = d.garantiasTotal / d.passivoTotal;
-    const garScore = calcScore(cobertura, [3.0, 2.0, 1.0, 0.5]);
+    const garScore = calcScore(cobertura, [3.0, 2.0, 1.0]);
 
     return [
       {
