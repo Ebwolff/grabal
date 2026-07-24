@@ -7,42 +7,138 @@ import { cn } from '@/lib/utils';
 import { Upload, Download, FileSpreadsheet, Database, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const recentImports = [
-  { file: 'safra_2024_soja.xlsx', date: '16/03/2026 14:22', records: 1240, status: 'success' },
-  { file: 'custos_operacionais_Q1.csv', date: '15/03/2026 09:15', records: 384, status: 'success' },
-  { file: 'receitas_marco.xlsx', date: '14/03/2026 18:40', records: 96, status: 'warning' },
-  { file: 'ativos_fazenda_rioDoce.csv', date: '12/03/2026 11:03', records: 52, status: 'success' },
-];
-
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ToastProvider';
+import { 
+  getProductions, 
+  getAllCosts, 
+  getSales, 
+  getAssets, 
+  getCPRs, 
+  getLiabilities 
+} from '@/lib/supabase/database';
+
+interface RecentEntry {
+  type: string;
+  description: string;
+  date: string;
+  info: string;
+  ts: number;
+  status: string;
+}
+
+const STATS_CONFIG = [
+  { name: 'Produtores', records: 0, icon: '👤', table: 'Producer' },
+  { name: 'Fazendas', records: 0, icon: '🏡', table: 'Farm' },
+  { name: 'Safras', records: 0, icon: '🌱', table: 'Safra' },
+  { name: 'Culturas', records: 0, icon: '🌾', table: 'Cultura' },
+  { name: 'Produção', records: 0, icon: '📊', table: 'Production' },
+  { name: 'Custos', records: 0, icon: '💰', table: 'Cost' },
+  { name: 'Receitas', records: 0, icon: '📈', table: 'Revenue' },
+  { name: 'Ativos', records: 0, icon: '🏗️', table: 'Asset' },
+];
 
 export default function DatabasePage() {
   const { info } = useToast();
-  const [stats, setStats] = React.useState([
-    { name: 'Produtores', records: 0, icon: '👤', table: 'Client' },
-    { name: 'Fazendas', records: 0, icon: '🏡', table: 'Farm' },
-    { name: 'Safras', records: 0, icon: '🌱', table: 'Safra' },
-    { name: 'Culturas', records: 0, icon: '🌾', table: 'Cultura' },
-    { name: 'Produção', records: 0, icon: '📊', table: 'Production' },
-    { name: 'Custos', records: 0, icon: '💰', table: 'Cost' },
-    { name: 'Receitas', records: 0, icon: '📈', table: 'Sale' },
-    { name: 'Ativos', records: 0, icon: '🏗️', table: 'Asset' },
-  ]);
+  const [stats, setStats] = React.useState(STATS_CONFIG);
   const [loading, setLoading] = React.useState(true);
-  const [imports, setImports] = React.useState<any[]>([]);
+  const [imports, setImports] = React.useState<RecentEntry[]>([]);
 
   React.useEffect(() => {
     async function loadStats() {
       const supabase = createClient();
       setLoading(true);
       try {
-        const newStats = [...stats];
+        const newStats = STATS_CONFIG.map(s => ({ ...s, records: 0 }));
         for (let i = 0; i < newStats.length; i++) {
           const { count } = await supabase.from(newStats[i].table).select('*', { count: 'exact', head: true });
           newStats[i].records = count || 0;
         }
         setStats(newStats);
+
+        // Busca real de lançamentos recentes
+        const [prods, costs, salesData, assetsData, cprsData, liabsData] = await Promise.all([
+          getProductions(),
+          getAllCosts(),
+          getSales(),
+          getAssets(),
+          getCPRs(),
+          getLiabilities()
+        ]);
+
+        const recent: RecentEntry[] = [];
+        prods.forEach(p => {
+          recent.push({
+            type: 'Produção',
+            description: `Produção de ${p.Cultura?.name || ''}`,
+            date: new Date(p.createdAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+            info: `${p.totalProduction.toLocaleString('pt-BR')} sc`,
+            ts: new Date(p.createdAt).getTime(),
+            status: 'success'
+          });
+        });
+
+        costs.forEach(c => {
+          const label = c.items && c.items.length > 0 ? c.items[0].description : `Custo: ${c.type}`;
+          const totalVal = c.items ? c.items.reduce((acc, item) => acc + item.value, 0) : 0;
+          recent.push({
+            type: 'Custo',
+            description: label,
+            date: new Date(c.createdAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+            info: `R$ ${totalVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+            ts: new Date(c.createdAt).getTime(),
+            status: 'success'
+          });
+        });
+
+        salesData.forEach(s => {
+          recent.push({
+            type: 'Venda',
+            description: `Venda ${s.Cultura?.name || ''}`,
+            date: new Date(s.createdAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+            info: `R$ ${s.grossRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+            ts: new Date(s.createdAt).getTime(),
+            status: 'success'
+          });
+        });
+
+        assetsData.forEach(a => {
+          recent.push({
+            type: 'Ativo',
+            description: `Ativo: ${a.description}`,
+            date: new Date(a.createdAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+            info: `R$ ${a.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+            ts: new Date(a.createdAt).getTime(),
+            status: 'success'
+          });
+        });
+
+        cprsData.forEach(c => {
+          recent.push({
+            type: 'CPR',
+            description: `CPR emitida - ${c.cultura}`,
+            date: new Date(c.createdAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+            info: `R$ ${c.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+            ts: new Date(c.createdAt).getTime(),
+            status: 'success'
+          });
+        });
+
+        liabsData.forEach(l => {
+          recent.push({
+            type: 'Passivo',
+            description: `Dívida: ${l.creditor}`,
+            date: new Date(l.createdAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+            info: `R$ ${l.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+            ts: new Date(l.createdAt).getTime(),
+            status: 'success'
+          });
+        });
+
+        // Ordena do mais recente para o mais antigo
+        recent.sort((a, b) => b.ts - a.ts);
+        setImports(recent.slice(0, 5));
+
       } catch (err) {
         console.error(err);
       } finally {
@@ -125,16 +221,16 @@ export default function DatabasePage() {
 
           {/* Recent Imports */}
           <div>
-            <h4 className="font-bold uppercase tracking-tight mb-4 text-sm">Importações Recentes</h4>
+            <h4 className="font-bold uppercase tracking-tight mb-4 text-sm">Lançamentos Recentes</h4>
             <div className="card overflow-hidden">
               {imports.length === 0 ? (
                 <div className="p-8 text-center text-slate-500 text-xs">
-                  Nenhuma importação recente encontrada.
+                  Nenhum lançamento recente encontrado.
                 </div>
               ) : (
                 imports.map((imp, i) => (
                   <motion.div
-                    key={imp.file}
+                    key={i}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: i * 0.05 }}
@@ -142,8 +238,8 @@ export default function DatabasePage() {
                   >
                     <div className="flex items-start justify-between mb-1">
                       <div className="flex items-center gap-2">
-                        <FileSpreadsheet size={14} className="text-emerald-500" />
-                        <span className="text-xs font-bold truncate max-w-[160px]">{imp.file}</span>
+                        <Database size={14} className="text-emerald-500" />
+                        <span className="text-xs font-bold truncate max-w-[200px]">{imp.type}: {imp.description}</span>
                       </div>
                       {imp.status === 'success' ? (
                         <CheckCircle2 size={14} className="text-emerald-400" />
@@ -153,7 +249,7 @@ export default function DatabasePage() {
                     </div>
                     <div className="flex justify-between text-[10px] text-slate-600">
                       <span>{imp.date}</span>
-                      <span>{imp.records} registros</span>
+                      <span>{imp.info}</span>
                     </div>
                   </motion.div>
                 ))

@@ -161,7 +161,7 @@ export default function RatingPage() {
         ]
       },
     ];
-  }, []);
+  }, [d]);
 
   const overallScore = useMemo(() => {
     const weights = [0.25, 0.25, 0.25, 0.25];

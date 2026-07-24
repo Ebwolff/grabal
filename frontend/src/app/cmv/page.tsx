@@ -269,7 +269,7 @@ export default function CMVPage() {
                     className="border-b border-industrial-border/50 hover:bg-slate-800/30 transition-colors">
                     <td className="p-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cultureColors[i] }} />
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cultureColors[i % cultureColors.length] }} />
                         <span className="text-sm font-bold">{row.cultura}</span>
                       </div>
                     </td>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { MainContent } from '@/components/MainContent';
 import { PageHeader } from '@/components/PageHeader';
 import { usePrivacy } from '@/context/PrivacyContext';
@@ -17,7 +17,7 @@ import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip
 } from 'recharts';
 import Link from 'next/link';
-import { getCPRs, deleteCPR } from '@/lib/supabase/database';
+import { getCPRs, deleteCPR, getProductions } from '@/lib/supabase/database';
 
 interface CPRLocal {
   id: string;
@@ -33,8 +33,7 @@ interface CPRLocal {
 const culturas = ['Soja', 'Milho', 'Algodão', 'Café', 'Trigo'];
 const cultureColors: Record<string, string> = { Soja: '#10b981', Milho: '#06b6d4', Algodão: '#f59e0b', Café: '#4f46e5', Trigo: '#ef4444' };
 
-// Production data for risk calc
-const producaoTotal: Record<string, number> = {};
+// Production data for risk calc is now fetched dynamically and stored in component state
 
 const statusCfg = {
   vigente: { label: 'Vigente', cls: 'bg-emerald-950/40 border-emerald-800 text-emerald-400' },
@@ -57,15 +56,25 @@ export default function CPRPage() {
   
   const [data, setData] = useState<CPRLocal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [producaoTotal, setProducaoTotal] = useState<Record<string, number>>({});
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const cprs = await getCPRs();
+      const [cprs, prods] = await Promise.all([
+        getCPRs(),
+        getProductions()
+      ]);
+
+      const prodMap: Record<string, number> = {};
+      prods.forEach(p => {
+        const cName = p.Cultura?.name;
+        if (cName) {
+          prodMap[cName] = (prodMap[cName] || 0) + (p.totalProduction || 0);
+        }
+      });
+      setProducaoTotal(prodMap);
+
       const mapped = cprs.map(c => {
         const dueDate = new Date(c.dueDate);
         const now = new Date();
@@ -87,12 +96,17 @@ export default function CPRPage() {
         };
       });
       setData(mapped);
-    } catch (err: any) {
-      toastError('Erro ao carregar CPRs: ' + err.message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      toastError('Erro ao carregar CPRs: ' + message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [toastError]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const filtered = useMemo(() => data.filter(d => !globalCultura || d.cultura === globalCultura), [data, globalCultura]);
   const ativas = useMemo(() => filtered.filter(d => d.status !== 'liquidada'), [filtered]);
@@ -115,7 +129,7 @@ export default function CPRPage() {
     const avgRisk = riskByCultura.length > 0 ? riskByCultura.reduce((s, r) => s + r.pctComprometido, 0) / riskByCultura.length : 0;
 
     return { valorTotal, volumePorCultura, vencidas, proximas, riskByCultura, avgRisk, qtd: ativas.length };
-  }, [ativas]);
+  }, [ativas, producaoTotal]);
 
   const pieData = Object.entries(totals.volumePorCultura)
     .map(([cultura, vol]) => ({ name: cultura, value: vol, color: cultureColors[cultura] || '#64748b' }))
