@@ -132,7 +132,7 @@ export default function CPRPage() {
   }, [ativas, producaoTotal]);
 
   const pieData = Object.entries(totals.volumePorCultura)
-    .map(([cultura, vol]) => ({ name: cultura, value: vol, color: cultureColors[cultura] || '#64748b' }))
+    .map(([cultura, vol]) => ({ name: cultura, value: vol, color: cultureColors[cultura] || '#71717a' }))
     .sort((a, b) => b.value - a.value);
 
   const removeItem = async (id: string) => {
@@ -209,7 +209,7 @@ export default function CPRPage() {
               <tbody>
                 {filtered.map((item, i) => {
                   const st = statusCfg[item.status];
-                  const color = cultureColors[item.cultura] || '#64748b';
+                  const color = cultureColors[item.cultura] || '#71717a';
                   return (
                     <motion.tr key={item.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
                       className={cn("border-b border-industrial-border/50 hover:bg-slate-800/30 transition-colors", item.status === 'liquidada' && "opacity-50")}>
@@ -291,7 +291,7 @@ export default function CPRPage() {
                   <Pie data={pieData} dataKey="value" cx="50%" cy="50%" outerRadius={65} innerRadius={38} strokeWidth={0}>
                     {pieData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ background: '#0f1724', border: '1px solid #1a2332', borderRadius: 8, fontSize: 11 }}
+                  <Tooltip contentStyle={{ background: '#131316', border: '1px solid #232326', borderRadius: 8, fontSize: 11 }}
                     formatter={(value) => [`${Number(value).toLocaleString('pt-BR')} sc`, '']} />
                 </PieChart>
               </ResponsiveContainer>

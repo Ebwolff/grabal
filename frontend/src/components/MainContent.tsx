@@ -18,7 +18,7 @@ export function MainContent({ children }: { children: React.ReactNode }) {
         transition={{ duration: 0.25, ease: 'easeInOut' }}
         className="pt-14 min-h-screen"
       >
-        <div className="p-6">
+        <div className="p-6 md:p-8">
           {children}
         </div>
       </motion.main>

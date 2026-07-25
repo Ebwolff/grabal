@@ -62,7 +62,7 @@ export default function LoginPage() {
           <div className="inline-flex p-4 bg-emerald-900/30 border border-primary text-primary-light mb-4">
             <ShieldCheck size={32} />
           </div>
-          <h1 className="text-2xl font-semibolder">
+          <h1 className="text-2xl font-bold">
             GRAM<span className="text-primary-light">BAL</span>
           </h1>
           <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-1">
@@ -114,7 +114,7 @@ export default function LoginPage() {
               </>
             ) : (
               <>
-                Acessar Terminal
+                Acessar Plataforma
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </>
             )}
@@ -127,9 +127,6 @@ export default function LoginPage() {
           </p>
         </div>
       </motion.div>
-
-      {/* Industrial Scanlines */}
-      <div className="fixed inset-0 pointer-events-none z-50 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(0,255,0,0.01),rgba(0,0,255,0.03))] bg-[length:100%_4px,3px_100%] opacity-20" />
     </div>
   );
 }

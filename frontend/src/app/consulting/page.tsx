@@ -122,7 +122,7 @@ export default function ConsultingPage() {
   }, [filtered]);
 
   const pieData = Object.entries(totals.porTipo)
-    .map(([tipo, valor]) => ({ name: tipo, value: valor, color: tipoColorMap[tipo] || '#64748b' }))
+    .map(([tipo, valor]) => ({ name: tipo, value: valor, color: tipoColorMap[tipo] || '#71717a' }))
     .sort((a, b) => b.value - a.value);
 
   const removeItem = async (id: string) => {
@@ -310,7 +310,7 @@ export default function ConsultingPage() {
               <tbody>
                 {filtered.map((item, i) => {
                   const TipoIcon = tipoIconMap[item.tipoConsultoria] || GraduationCap;
-                  const color = tipoColorMap[item.tipoConsultoria] || '#64748b';
+                  const color = tipoColorMap[item.tipoConsultoria] || '#71717a';
                   const ct = contratoConfig[item.contrato];
                   return (
                     <motion.tr key={item.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
@@ -354,7 +354,7 @@ export default function ConsultingPage() {
                   <Pie data={pieData} dataKey="value" cx="50%" cy="50%" outerRadius={70} innerRadius={40} strokeWidth={0}>
                     {pieData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ background: '#0f1724', border: '1px solid #1a2332', borderRadius: 8, fontSize: 11 }} formatter={(value) => [fmt(Number(value)), '']} />
+                  <Tooltip contentStyle={{ background: '#131316', border: '1px solid #232326', borderRadius: 8, fontSize: 11 }} formatter={(value) => [fmt(Number(value)), '']} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="space-y-2 mt-2">

@@ -107,7 +107,7 @@ export default function LaborPage() {
   }, [data]);
 
   const pieData = Object.entries(totals.porSetor).map(([setor, valor]) => ({
-    name: setor, value: valor, color: setorColors[setor] || '#64748b',
+    name: setor, value: valor, color: setorColors[setor] || '#71717a',
   }));
 
   const encargoPct = totals.salarioTotal > 0 ? (totals.encargosTotal / totals.salarioTotal * 100).toFixed(1) : '0';
@@ -354,7 +354,7 @@ export default function LaborPage() {
                 <Pie data={pieData} dataKey="value" cx="50%" cy="50%" outerRadius={70} innerRadius={40} strokeWidth={0}>
                   {pieData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
                 </Pie>
-                <Tooltip contentStyle={{ background: '#0f1724', border: '1px solid #1a2332', borderRadius: 8, fontSize: 11 }} formatter={(value) => [fmt(Number(value)), '']} />
+                <Tooltip contentStyle={{ background: '#131316', border: '1px solid #232326', borderRadius: 8, fontSize: 11 }} formatter={(value) => [fmt(Number(value)), '']} />
               </PieChart>
             </ResponsiveContainer>
             <div className="space-y-2 mt-2">

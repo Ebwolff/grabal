@@ -32,7 +32,7 @@ const tipoConfig = {
   semente: { label: 'Semente', color: 'text-primary-light', bg: 'bg-primary/10 border-primary-light/30', icon: Wheat },
 };
 
-const pieColors = { fertilizante: '#10b981', defensivo: '#F59E0B', semente: '#3B82F6' };
+const pieColors = { fertilizante: '#10b981', defensivo: '#F59E0B', semente: '#8b5cf6' };
 const tiposDisponiveis: Array<{ value: Insumo['tipo']; label: string }> = [
   { value: 'fertilizante', label: 'Fertilizante' },
   { value: 'defensivo', label: 'Defensivo' },
@@ -118,7 +118,7 @@ export default function CostsPage() {
   const pieData = Object.entries(totals.porTipo).map(([tipo, valor]) => ({
     name: tipoConfig[tipo as keyof typeof tipoConfig]?.label || tipo,
     value: valor,
-    color: pieColors[tipo as keyof typeof pieColors] || '#64748b',
+    color: pieColors[tipo as keyof typeof pieColors] || '#71717a',
   }));
 
   const culturaCostData = Object.entries(totals.porCultura)
@@ -255,10 +255,10 @@ export default function CostsPage() {
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <MetricCard title="Custo Total" value={fmt(totals.custoGeral)} icon={DollarSign} accentColor="#3B82F6" />
+        <MetricCard title="Custo Total" value={fmt(totals.custoGeral)} icon={DollarSign} accentColor="#8b5cf6" />
         <MetricCard title="Fertilizantes" value={fmt(totals.porTipo['fertilizante'] || 0)} icon={FlaskConical} accentColor="#10B981" />
         <MetricCard title="Defensivos" value={fmt(totals.porTipo['defensivo'] || 0)} icon={Leaf} accentColor="#F59E0B" />
-        <MetricCard title="Sementes" value={fmt(totals.porTipo['semente'] || 0)} icon={Wheat} accentColor="#3B82F6" />
+        <MetricCard title="Sementes" value={fmt(totals.porTipo['semente'] || 0)} icon={Wheat} accentColor="#8b5cf6" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -321,7 +321,7 @@ export default function CostsPage() {
                 <Pie data={pieData} dataKey="value" cx="50%" cy="50%" outerRadius={70} innerRadius={40} strokeWidth={0}>
                   {pieData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
                 </Pie>
-                <Tooltip contentStyle={{ background: '#0f1724', border: '1px solid #1a2332', borderRadius: 8, fontSize: 11 }} formatter={(value) => [fmt(Number(value)), '']} />
+                <Tooltip contentStyle={{ background: '#131316', border: '1px solid #232326', borderRadius: 8, fontSize: 11 }} formatter={(value) => [fmt(Number(value)), '']} />
               </PieChart>
             </ResponsiveContainer>
             <div className="space-y-2 mt-2">

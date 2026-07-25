@@ -196,7 +196,7 @@ export default function DREPage() {
       const ebitda = lb - cop - da;
       const ll = ebitda - items.reduce((s, d) => s + d.depreciacaoAmort, 0) - items.reduce((s, d) => s + d.despesasFinanceiras, 0) - items.reduce((s, d) => s + d.impostos, 0);
       const ml = rl > 0 ? (ll / rl * 100) : 0;
-      return { cultura, receitaBruta: rb, lucroBruto: lb, ebitda, lucroLiquido: ll, margemLiquida: ml, color: cultureColors[cultura] || '#64748b' };
+      return { cultura, receitaBruta: rb, lucroBruto: lb, ebitda, lucroLiquido: ll, margemLiquida: ml, color: cultureColors[cultura] || '#71717a' };
     }).sort((a, b) => b.receitaBruta - a.receitaBruta);
   }, [filtered]);
 
@@ -206,7 +206,7 @@ export default function DREPage() {
     { name: 'Custos Op.', value: -consolidated.custosOp, color: '#f97316' },
     { name: 'Desp. Admin.', value: -consolidated.despAdmin, color: '#f59e0b' },
     { name: 'EBITDA', value: consolidated.ebitda, color: '#06b6d4' },
-    { name: 'Deprec.', value: -consolidated.depAmort, color: '#64748b' },
+    { name: 'Deprec.', value: -consolidated.depAmort, color: '#71717a' },
     { name: 'Desp. Fin.', value: -consolidated.despFin, color: '#6366f1' },
     { name: 'Impostos', value: -consolidated.impostos, color: '#4f46e5' },
     { name: 'Lucro Líq.', value: consolidated.lucroLiquido, color: '#22c55e' },
@@ -314,7 +314,7 @@ export default function DREPage() {
                   <Pie data={revenuePieData} dataKey="value" cx="50%" cy="50%" outerRadius={65} innerRadius={38} strokeWidth={0}>
                     {revenuePieData.map((entry) => <PieCell key={entry.name} fill={entry.color} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ background: '#0f1724', border: '1px solid #1a2332', borderRadius: 8, fontSize: 11 }}
+                  <Tooltip contentStyle={{ background: '#131316', border: '1px solid #232326', borderRadius: 8, fontSize: 11 }}
                     formatter={(value) => [fmt(Number(value)), '']} />
                 </PieChart>
               </ResponsiveContainer>
@@ -378,9 +378,9 @@ export default function DREPage() {
             <h4 className="font-bold uppercase tracking-tight text-sm mb-4">Cascata DRE</h4>
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={waterfallData} margin={{ left: 10 }}>
-                <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 9 }} axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ background: '#0f1724', border: '1px solid #1a2332', borderRadius: 8, fontSize: 11 }}
+                <XAxis dataKey="name" tick={{ fill: '#71717a', fontSize: 9 }} axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} tick={{ fill: '#71717a', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={{ background: '#131316', border: '1px solid #232326', borderRadius: 8, fontSize: 11 }}
                   formatter={(value) => [fmt(Number(value)), '']} />
                 <Bar dataKey="value" radius={[2, 2, 0, 0]}>
                   {waterfallData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}

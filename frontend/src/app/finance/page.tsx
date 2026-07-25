@@ -131,7 +131,7 @@ export default function FinancePage() {
       { label: 'Lucro Líquido', value: lucroLiquido, pct: receitaBruta > 0 ? Math.round((lucroLiquido / receitaBruta) * 100) : 0 },
     ];
 
-    const catColors = { Insumos: '#10b981', Servicos: '#f59e0b', MaoDeObra: '#3b82f6', Armazenagem: '#6366f1', Despesas: '#64748b' };
+    const catColors = { Insumos: '#10b981', Servicos: '#f59e0b', MaoDeObra: '#8b5cf6', Armazenagem: '#6366f1', Despesas: '#71717a' };
     const costBreakdown = Object.entries(catMap).filter(([_, v]) => v > 0).map(([name, value]) => ({
       name, value, color: catColors[name as keyof typeof catColors] || '#000'
     })).sort((a, b) => b.value - a.value);
@@ -184,11 +184,11 @@ export default function FinancePage() {
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-        <MetricCard title="Margem EBITDA" value={`${data.kpis.margemEbitda}%`} icon={Activity} accentColor="#3B82F6" />
+        <MetricCard title="Margem EBITDA" value={`${data.kpis.margemEbitda}%`} icon={Activity} accentColor="#8b5cf6" />
         <MetricCard title="Liquidez Corrente" value={data.kpis.liquidez} icon={RefreshCw} accentColor="#10B981" />
         <MetricCard title="Endividamento" value={`${data.kpis.endividamento}%`} icon={TrendingDown} accentColor="#10B981" />
         <MetricCard title="ROE" value={`${data.kpis.roe}%`} icon={Percent} accentColor="#EF4444" />
-        <MetricCard title="Margem Líquida" value={`${data.kpis.margemLiquida}%`} icon={TrendingUp} accentColor="#3B82F6" />
+        <MetricCard title="Margem Líquida" value={`${data.kpis.margemLiquida}%`} icon={TrendingUp} accentColor="#8b5cf6" />
         <MetricCard title="Giro do Ativo" value={data.kpis.giroAtivo} icon={BarChart3} accentColor="#10B981" />
       </div>
 
@@ -246,7 +246,7 @@ export default function FinancePage() {
                   <Cell key={entry.name} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ background: '#0f1724', border: '1px solid #1a2332', borderRadius: 8, fontSize: 12 }} />
+              <Tooltip contentStyle={{ background: '#131316', border: '1px solid #232326', borderRadius: 8, fontSize: 12 }} />
             </PieChart>
           </ResponsiveContainer>
           <div className="space-y-2 mt-3">
@@ -281,11 +281,11 @@ export default function FinancePage() {
         </div>
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={data.monthlyRevenue} barGap={2}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" />
-            <XAxis dataKey="month" tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={{ background: '#0f1724', border: '1px solid #1a2332', borderRadius: 8, fontSize: 12 }} />
-            <Bar dataKey="receita" fill="#3B82F6" name="Receita" radius={[4, 4, 0, 0]} />
+            <CartesianGrid stroke="#232326" />
+            <XAxis dataKey="month" tick={{ fill: '#71717a', fontSize: 10 }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: '#71717a', fontSize: 10 }} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={{ background: '#131316', border: '1px solid #232326', borderRadius: 8, fontSize: 12 }} />
+            <Bar dataKey="receita" fill="#8b5cf6" name="Receita" radius={[4, 4, 0, 0]} />
             <Bar dataKey="custo" fill="#EF4444" name="Custo" radius={[4, 4, 0, 0]} opacity={0.7} />
           </BarChart>
         </ResponsiveContainer>

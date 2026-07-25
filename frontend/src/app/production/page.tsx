@@ -34,7 +34,7 @@ const statusConfig = {
 };
 
 const cultureColors: Record<string, string> = {
-  'Soja': '#10b981', 'Milho': '#3B82F6', 'Algodão': '#F59E0B',
+  'Soja': '#10b981', 'Milho': '#8b5cf6', 'Algodão': '#F59E0B',
   'Café': '#4f46e5', 'Trigo': '#06b6d4', 'Cana-de-Açúcar': '#22c55e',
 };
 
@@ -210,10 +210,10 @@ export default function ProductionPage() {
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <MetricCard title="Área Total" value={`${totals.area.toLocaleString('pt-BR')} ha`} icon={MapPin} accentColor="#3B82F6" />
+        <MetricCard title="Área Total" value={`${totals.area.toLocaleString('pt-BR')} ha`} icon={MapPin} accentColor="#8b5cf6" />
         <MetricCard title="Produção Total" value={`${(totals.producao / 1000).toFixed(1)}K sc`} icon={Wheat} accentColor="#10B981" />
         <MetricCard title="Produtividade Média" value={`${totals.prodMedia.toFixed(1)} sc/ha`} icon={Sprout} accentColor="#F59E0B" />
-        <MetricCard title="Culturas Ativas" value={totals.culturas.toString()} icon={BarChart3} accentColor="#3B82F6" />
+        <MetricCard title="Culturas Ativas" value={totals.culturas.toString()} icon={BarChart3} accentColor="#8b5cf6" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -250,7 +250,7 @@ export default function ProductionPage() {
                       >
                         <td className="p-3">
                           <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cultureColors[item.cultura] || '#64748b' }} />
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cultureColors[item.cultura] || '#71717a' }} />
                             <span className="font-semibold text-white text-xs">{item.cultura}</span>
                           </div>
                         </td>
@@ -321,14 +321,14 @@ export default function ProductionPage() {
             </div>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={chartData} layout="vertical" margin={{ left: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1a2332" horizontal={false} />
-                <XAxis type="number" tick={{ fill: '#64748b', fontSize: 9 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="cultura" tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 600 }} width={65} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ background: '#0f1724', border: '1px solid #1a2332', borderRadius: 8, fontSize: 11 }}
+                <CartesianGrid stroke="#232326" horizontal={false} />
+                <XAxis type="number" tick={{ fill: '#71717a', fontSize: 9 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="cultura" tick={{ fill: '#a1a1aa', fontSize: 11, fontWeight: 600 }} width={65} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={{ background: '#131316', border: '1px solid #232326', borderRadius: 8, fontSize: 11 }}
                   formatter={(value) => [`${Number(value).toLocaleString('pt-BR')} sc`, 'Produção']} />
                 <Bar dataKey="total" radius={[0, 4, 4, 0]}>
                   {chartData.map((entry) => (
-                    <Cell key={entry.cultura} fill={cultureColors[entry.cultura] || '#64748b'} />
+                    <Cell key={entry.cultura} fill={cultureColors[entry.cultura] || '#71717a'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -350,7 +350,7 @@ export default function ProductionPage() {
                   return (
                     <div key={comp.cultura} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cultureColors[comp.cultura] || '#64748b' }} />
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cultureColors[comp.cultura] || '#71717a' }} />
                         <span className="text-xs font-semibold text-white">{comp.cultura}</span>
                       </div>
                       <div className="flex items-center gap-3">

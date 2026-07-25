@@ -68,9 +68,9 @@ export function FinancialChart({ data, title, type = 'area', series, height = 28
               </linearGradient>
             ))}
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1a233240" vertical={false} />
-          <XAxis dataKey="name" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
-          <YAxis stroke="#475569" fontSize={9} tickLine={false} axisLine={false}
+          <CartesianGrid strokeDasharray="3 3" stroke="#23232640" vertical={false} />
+          <XAxis dataKey="name" stroke="#52525b" fontSize={10} tickLine={false} axisLine={false} />
+          <YAxis stroke="#52525b" fontSize={9} tickLine={false} axisLine={false}
             tickFormatter={(v) => (formatValue || defaultFormat)(v)} />
           <Tooltip content={<CustomTooltip formatValue={formatValue} />} />
           {series.map(s => (

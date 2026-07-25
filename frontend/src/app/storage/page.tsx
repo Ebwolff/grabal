@@ -108,7 +108,7 @@ export default function StoragePage() {
   const pieData = Object.entries(totals.porTipo).map(([tipo, valor]) => ({
     name: tipoConfig[tipo as keyof typeof tipoConfig]?.label || tipo,
     value: valor,
-    color: tipoConfig[tipo as keyof typeof tipoConfig]?.pieColor || '#64748b',
+    color: tipoConfig[tipo as keyof typeof tipoConfig]?.pieColor || '#71717a',
   }));
 
   const culturaCostData = Object.entries(totals.porCultura)
@@ -253,7 +253,7 @@ export default function StoragePage() {
                   <Pie data={pieData} dataKey="value" cx="50%" cy="50%" outerRadius={70} innerRadius={40} strokeWidth={0}>
                     {pieData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ background: '#0f1724', border: '1px solid #1a2332', borderRadius: 8, fontSize: 11 }} formatter={(value) => [fmt(Number(value)), '']} />
+                  <Tooltip contentStyle={{ background: '#131316', border: '1px solid #232326', borderRadius: 8, fontSize: 11 }} formatter={(value) => [fmt(Number(value)), '']} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="space-y-2 mt-2">

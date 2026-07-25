@@ -224,9 +224,9 @@ export default function ConsolidatedPage() {
             </h4>
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={cultureChart} barGap={4}>
-                <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 9, fill: '#475569' }} tickFormatter={(v) => `${(v / 1000000).toFixed(0)}M`} />
-                <Tooltip contentStyle={{ background: '#0f1724', border: '1px solid #1a2332', borderRadius: 8, fontSize: 11 }}
+                <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: '#71717a' }} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 9, fill: '#52525b' }} tickFormatter={(v) => `${(v / 1000000).toFixed(0)}M`} />
+                <Tooltip contentStyle={{ background: '#131316', border: '1px solid #232326', borderRadius: 8, fontSize: 11 }}
                   formatter={(value) => [fmt(Number(value)), '']} />
                 <Bar dataKey="receita" name="Receita" fill="#10b981" radius={[2, 2, 0, 0]} />
                 <Bar dataKey="custos" name="Custos" fill="#ef4444" radius={[2, 2, 0, 0]} />
@@ -242,7 +242,7 @@ export default function ConsolidatedPage() {
                 <Pie data={receitaPie} dataKey="value" cx="50%" cy="50%" outerRadius={70} innerRadius={40} strokeWidth={0}>
                   {receitaPie.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
                 </Pie>
-                <Tooltip contentStyle={{ background: '#0f1724', border: '1px solid #1a2332', borderRadius: 8, fontSize: 11 }}
+                <Tooltip contentStyle={{ background: '#131316', border: '1px solid #232326', borderRadius: 8, fontSize: 11 }}
                   formatter={(value) => [fmtM(Number(value)), '']} />
               </PieChart>
             </ResponsiveContainer>
@@ -365,9 +365,9 @@ export default function ConsolidatedPage() {
             </h4>
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={historicoSafras}>
-                <XAxis dataKey="safra" tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 9, fill: '#475569' }} tickFormatter={(v) => `${(v / 1000000).toFixed(0)}M`} />
-                <Tooltip contentStyle={{ background: '#0f1724', border: '1px solid #1a2332', borderRadius: 8, fontSize: 11 }}
+                <XAxis dataKey="safra" tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: '#71717a' }} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 9, fill: '#52525b' }} tickFormatter={(v) => `${(v / 1000000).toFixed(0)}M`} />
+                <Tooltip contentStyle={{ background: '#131316', border: '1px solid #232326', borderRadius: 8, fontSize: 11 }}
                   formatter={(value) => [fmtM(Number(value)), '']} />
                 <Area type="monotone" dataKey="receita" stroke="#10b981" fill="#10b98120" name="Receita" strokeWidth={2} />
                 <Area type="monotone" dataKey="lucro" stroke="#06b6d4" fill="#06b6d420" name="Lucro" strokeWidth={2} />
@@ -389,7 +389,7 @@ export default function ConsolidatedPage() {
                 { label: 'Serviços', value: custosOperacionais.servicos, color: '#f59e0b' },
                 { label: 'Mão de Obra', value: custosOperacionais.maoDeObra, color: '#06b6d4' },
                 { label: 'Armazenagem', value: custosOperacionais.armazenagem, color: '#4f46e5' },
-                { label: 'Despesas Adm.', value: custosOperacionais.despesas, color: '#64748b' },
+                { label: 'Despesas Adm.', value: custosOperacionais.despesas, color: '#71717a' },
                 { label: 'Consultoria', value: custosOperacionais.consultoria, color: '#22c55e' },
               ].map(c => (
                 <div key={c.label}>

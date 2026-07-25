@@ -125,9 +125,9 @@ export default function CMVPage() {
     const cCategories = [
       { key: 'insumos', label: 'Insumos / Químicos', icon: Package, color: '#10b981', value: catMap.insumos },
       { key: 'servicos', label: 'Serv. Mecanizados', icon: Tractor, color: '#f59e0b', value: catMap.servicos },
-      { key: 'maoDeObra', label: 'Mão de Obra', icon: HardHat, color: '#3b82f6', value: catMap.maoDeObra },
+      { key: 'maoDeObra', label: 'Mão de Obra', icon: HardHat, color: '#8b5cf6', value: catMap.maoDeObra },
       { key: 'armazenagem', label: 'Armazenagem', icon: Warehouse, color: '#6366f1', value: catMap.armazenagem },
-      { key: 'despesas', label: 'Despesas Gerais', icon: FileSpreadsheet, color: '#64748b', value: catMap.despesas },
+      { key: 'despesas', label: 'Despesas Gerais', icon: FileSpreadsheet, color: '#71717a', value: catMap.despesas },
       { key: 'consultoria', label: 'Consultoria', icon: GraduationCap, color: '#0ea5e9', value: catMap.consultoria },
       { key: 'frete', label: 'Fretes', icon: Truck, color: '#ef4444', value: catMap.frete },
     ].filter(c => c.value > 0);
@@ -206,9 +206,9 @@ export default function CMVPage() {
             </h4>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={barData} layout="vertical" margin={{ left: 90, right: 30 }}>
-                <XAxis type="number" tickFormatter={(v) => fmtK(v)} tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="name" tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 700 }} axisLine={false} tickLine={false} width={85} />
-                <Tooltip contentStyle={{ background: '#0f1724', border: '1px solid #1a2332', borderRadius: 8, fontSize: 11 }}
+                <XAxis type="number" tickFormatter={(v) => fmtK(v)} tick={{ fill: '#71717a', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="name" tick={{ fill: '#a1a1aa', fontSize: 11, fontWeight: 700 }} axisLine={false} tickLine={false} width={85} />
+                <Tooltip contentStyle={{ background: '#131316', border: '1px solid #232326', borderRadius: 8, fontSize: 11 }}
                   formatter={(value) => [fmt(Number(value)), '']} />
                 <Bar dataKey="value" radius={[0, 2, 2, 0]}>
                   {barData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
@@ -305,7 +305,7 @@ export default function CMVPage() {
                   <Pie data={pieData} dataKey="value" cx="50%" cy="50%" outerRadius={70} innerRadius={40} strokeWidth={0}>
                     {pieData.map((entry) => <PieCell key={entry.name} fill={entry.color} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ background: '#0f1724', border: '1px solid #1a2332', borderRadius: 8, fontSize: 11 }}
+                  <Tooltip contentStyle={{ background: '#131316', border: '1px solid #232326', borderRadius: 8, fontSize: 11 }}
                     formatter={(value) => [fmt(Number(value)), '']} />
                 </PieChart>
               </ResponsiveContainer>

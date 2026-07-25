@@ -143,7 +143,7 @@ export default function Dashboard() {
               data={stats.cashFlowData}
               type="area"
               series={[
-                { key: 'receita', name: 'Receita', color: '#3B82F6' },
+                { key: 'receita', name: 'Receita', color: '#8b5cf6' },
                 { key: 'custos', name: 'Custos', color: '#EF4444' },
               ]}
             />

@@ -270,7 +270,7 @@ export default function ConsolidationPage() {
                   <Pie data={revenuePieData} dataKey="value" cx="50%" cy="50%" outerRadius={70} innerRadius={40} strokeWidth={0}>
                     {revenuePieData.map((entry) => <PieCell key={entry.name} fill={entry.color} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ background: '#0f1724', border: '1px solid #1a2332', borderRadius: 8, fontSize: 11 }}
+                  <Tooltip contentStyle={{ background: '#131316', border: '1px solid #232326', borderRadius: 8, fontSize: 11 }}
                     formatter={(value) => [fmt(Number(value)), '']} />
                 </PieChart>
               </ResponsiveContainer>
@@ -323,10 +323,10 @@ export default function ConsolidationPage() {
             <h4 className="font-bold uppercase tracking-tight text-sm mb-4">Receita vs Custo (Mensal)</h4>
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                <XAxis dataKey="mes" tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} />
-                <YAxis tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} />
-                <Tooltip contentStyle={{ background: '#0f1724', border: '1px solid #1a2332', borderRadius: 8, fontSize: 11 }}
+                <CartesianGrid stroke="#27272a" />
+                <XAxis dataKey="mes" tick={{ fill: '#71717a', fontSize: 10 }} axisLine={false} />
+                <YAxis tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} tick={{ fill: '#71717a', fontSize: 10 }} axisLine={false} />
+                <Tooltip contentStyle={{ background: '#131316', border: '1px solid #232326', borderRadius: 8, fontSize: 11 }}
                   formatter={(value) => [fmt(Number(value)), '']} />
                 <Area type="monotone" dataKey="receita" stroke="#10b981" fill="#10b981" fillOpacity={0.15} strokeWidth={2} name="Receita" />
                 <Area type="monotone" dataKey="custo" stroke="#ef4444" fill="#ef4444" fillOpacity={0.1} strokeWidth={2} name="Custo" />
@@ -339,9 +339,9 @@ export default function ConsolidationPage() {
             <h4 className="font-bold uppercase tracking-tight text-sm mb-4">Cascata Financeira</h4>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={waterfallData} margin={{ left: 10, right: 10 }}>
-                <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 9 }} axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ background: '#0f1724', border: '1px solid #1a2332', borderRadius: 8, fontSize: 11 }}
+                <XAxis dataKey="name" tick={{ fill: '#71717a', fontSize: 9 }} axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} tick={{ fill: '#71717a', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={{ background: '#131316', border: '1px solid #232326', borderRadius: 8, fontSize: 11 }}
                   formatter={(value) => [fmt(Number(value)), '']} />
                 <Bar dataKey="value" radius={[2, 2, 0, 0]}>
                   {waterfallData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}

@@ -165,7 +165,7 @@ export default function ExecutiveDashboard() {
       name, sacas, color: cultureColorsList[i % cultureColorsList.length]
     })).sort((a,b) => b.sacas - a.sacas);
 
-    const catColors = { Insumos: '#10b981', Servicos: '#f59e0b', MaoDeObra: '#3b82f6', Armazenagem: '#6366f1', Outros: '#64748b' };
+    const catColors = { Insumos: '#10b981', Servicos: '#f59e0b', MaoDeObra: '#8b5cf6', Armazenagem: '#6366f1', Outros: '#71717a' };
     const custosCat = Object.entries(costCatMap).filter(([_, v]) => v > 0).map(([name, value]) => ({
       name, value, color: catColors[name as keyof typeof catColors] || '#000'
     })).sort((a,b) => b.value - a.value);
@@ -205,10 +205,10 @@ export default function ExecutiveDashboard() {
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-        <MetricCard title="Receita Total" value={fmtM(data.receita)} icon={TrendingUp} accentColor="#3B82F6" />
+        <MetricCard title="Receita Total" value={fmtM(data.receita)} icon={TrendingUp} accentColor="#8b5cf6" />
         <MetricCard title="Custos Totais" value={fmtM(data.custo)} icon={TrendingDown} accentColor="#EF4444" />
         <MetricCard title="Lucro Operacional" value={fmtM(data.lucro)} icon={DollarSign} accentColor="#10B981" />
-        <MetricCard title="EBITDA" value={fmtM(data.ebitda)} icon={Activity} accentColor="#3B82F6" />
+        <MetricCard title="EBITDA" value={fmtM(data.ebitda)} icon={Activity} accentColor="#8b5cf6" />
         <MetricCard title="Produção" value={(data.producaoTotal / 1000).toFixed(1) + 'K'} icon={Wheat} accentColor="#F59E0B" subtitle="sacas total" />
         <MetricCard title="Endividamento" value={fmtM(data.totalEndividamento)} icon={BarChart3} accentColor="#10B981" />
       </div>
@@ -221,7 +221,7 @@ export default function ExecutiveDashboard() {
             data={data.monthlyData}
             type="line"
             series={[
-              { key: 'receita', name: 'Receita', color: '#3B82F6' },
+              { key: 'receita', name: 'Receita', color: '#8b5cf6' },
               { key: 'custos', name: 'Custos', color: '#EF4444' },
               { key: 'lucro', name: 'Lucro', color: '#10B981' },
             ]}
@@ -269,7 +269,7 @@ export default function ExecutiveDashboard() {
             data={data.monthlyData}
             type="area"
             series={[
-              { key: 'receita', name: 'Receita', color: '#3B82F6' },
+              { key: 'receita', name: 'Receita', color: '#8b5cf6' },
               { key: 'custos', name: 'Custos', color: '#EF4444' },
               { key: 'lucro', name: 'Lucro', color: '#10B981' },
             ]}

@@ -247,8 +247,8 @@ export default function RatingPage() {
           <div className="min-w-[200px]">
             <ResponsiveContainer width="100%" height={160}>
               <RadarChart data={radarData}>
-                <PolarGrid stroke="#1e293b" />
-                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fill: '#64748b' }} />
+                <PolarGrid stroke="#27272a" />
+                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fill: '#71717a' }} />
                 <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
                 <Radar name="Score" dataKey="score" stroke={overallScore.color} fill={overallScore.color} fillOpacity={0.2} strokeWidth={2} />
               </RadarChart>
