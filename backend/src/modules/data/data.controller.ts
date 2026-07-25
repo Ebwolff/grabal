@@ -1,4 +1,11 @@
-import { Controller, Get, Post, Body, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { DataService } from './data.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -56,7 +63,7 @@ export class DataController {
 
   @Get('full-report/:safraId')
   async getFullReport(@Request() req: any) {
-     return this.dataService.findAllBySafra(req.params.safraId);
+    return this.dataService.findAllBySafra(req.params.safraId);
   }
 
   @Get('rating/:culturaId')

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { MainContent } from '@/components/MainContent';
 import { PageHeader } from '@/components/PageHeader';
 import { usePrivacy } from '@/context/PrivacyContext';
@@ -8,11 +9,13 @@ import { cn } from '@/lib/utils';
 import { Plus, Search, Filter, MoreVertical, Edit2, Trash2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/ToastProvider';
-import { getProducers, createProducer, updateProducer, deleteProducer, type Producer as DBProducer } from '@/lib/supabase/database';
+import { getProducers, createProducer, updateProducer, deleteProducer, getEconomicGroups, type Producer as DBProducer, type EconomicGroup } from '@/lib/supabase/database';
 
 interface Producer extends DBProducer {
   farms?: any[];
 }
+
+const PAGE_SIZE = 10;
 
 export default function ProducersPage() {
   const { isPrivate } = usePrivacy();
@@ -21,7 +24,10 @@ export default function ProducersPage() {
   const [producers, setProducers] = useState<Producer[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [economicGroup, setEconomicGroup] = useState<EconomicGroup | null>(null);
+
   // Form state
   const [formData, setFormData] = useState({
     id: '',
@@ -31,9 +37,6 @@ export default function ProducersPage() {
     phone: ''
   });
 
-  // Hardcoded group id based on the database state
-  const DEFAULT_ECONOMIC_GROUP = 'f190fb71-62dc-47e2-afd7-2a48abbaef70';
-
   useEffect(() => {
     fetchProducers();
   }, []);
@@ -41,14 +44,25 @@ export default function ProducersPage() {
   const fetchProducers = async () => {
     setLoading(true);
     try {
-      const data = await getProducers();
+      const [data, groups] = await Promise.all([getProducers(), getEconomicGroups()]);
       setProducers(data);
+      if (groups.length > 0) setEconomicGroup(groups[0]);
     } catch (err: any) {
       error('Erro ao buscar produtores: ' + err.message);
     } finally {
       setLoading(false);
     }
   };
+
+  const filteredProducers = producers.filter(p => {
+    const term = search.trim().toLowerCase();
+    if (!term) return true;
+    return p.name.toLowerCase().includes(term) || p.cpfCnpj.toLowerCase().includes(term);
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducers.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedProducers = filteredProducers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,13 +82,17 @@ export default function ProducersPage() {
         });
         success('Produtor atualizado com sucesso!');
       } else {
+        if (!economicGroup) {
+          error('Nenhum grupo econômico encontrado.');
+          return;
+        }
         // Insert
         await createProducer({
           name: formData.name,
           cpfCnpj: formData.cpfCnpj,
           email: formData.email,
           phone: formData.phone,
-          economicGroupId: DEFAULT_ECONOMIC_GROUP
+          economicGroupId: economicGroup.id
         });
         success('Produtor cadastrado com sucesso!');
       }
@@ -135,9 +153,11 @@ export default function ProducersPage() {
         <div className="flex gap-4 mb-6">
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-            <input 
-              type="text" 
-              placeholder="Pesquisar por nome, CPF ou CNPJ..." 
+            <input
+              type="text"
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
+              placeholder="Pesquisar por nome, CPF ou CNPJ..."
               className="w-full card pl-12 pr-4 py-3 text-sm focus:outline-none focus:border-primary"
             />
           </div>
@@ -164,10 +184,10 @@ export default function ProducersPage() {
               {loading && (
                 <tr><td colSpan={6} className="p-8 text-center text-slate-500">Carregando...</td></tr>
               )}
-              {!loading && producers.length === 0 && (
-                <tr><td colSpan={6} className="p-8 text-center text-slate-500">Nenhum produtor cadastrado.</td></tr>
+              {!loading && filteredProducers.length === 0 && (
+                <tr><td colSpan={6} className="p-8 text-center text-slate-500">Nenhum produtor encontrado.</td></tr>
               )}
-              {producers.map((producer, index) => (
+              {paginatedProducers.map((producer, index) => (
                 <motion.tr 
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -196,9 +216,9 @@ export default function ProducersPage() {
                     <span className="text-xs font-bold text-slate-500">{producer.farms?.length || 0} un.</span>
                   </td>
                   <td className="p-4 text-center">
-                    <span className="px-3 py-1 text-[10px] font-black border bg-emerald-950/50 border-emerald-500 text-emerald-400">
-                      A+
-                    </span>
+                    <Link href="/rating" className="px-3 py-1 text-[10px] font-black border border-slate-600 text-slate-400 hover:text-primary-light hover:border-primary transition-colors">
+                      Ver Rating
+                    </Link>
                   </td>
                   <td className="p-4 text-right">
                     <div className="flex justify-end gap-2">
@@ -216,10 +236,25 @@ export default function ProducersPage() {
           </table>
           
           <div className="p-4 bg-slate-900/30 flex justify-between items-center text-[10px] font-bold text-slate-600 uppercase tracking-widest">
-            <span>Mostrando {producers.length} produtores</span>
-            <div className="flex gap-4">
-              <button className="hover:text-primary-light transition-colors disabled:opacity-30" disabled>Anterior</button>
-              <button className="hover:text-primary-light transition-colors" disabled>Próxima</button>
+            <span>
+              Mostrando {paginatedProducers.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1}–{(currentPage - 1) * PAGE_SIZE + paginatedProducers.length} de {filteredProducers.length} produtores
+            </span>
+            <div className="flex items-center gap-4">
+              <span className="normal-case tracking-normal text-slate-500">Página {currentPage} de {totalPages}</span>
+              <button
+                className="hover:text-primary-light transition-colors disabled:opacity-30 disabled:hover:text-slate-600"
+                disabled={currentPage <= 1}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+              >
+                Anterior
+              </button>
+              <button
+                className="hover:text-primary-light transition-colors disabled:opacity-30 disabled:hover:text-slate-600"
+                disabled={currentPage >= totalPages}
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              >
+                Próxima
+              </button>
             </div>
           </div>
         </div>

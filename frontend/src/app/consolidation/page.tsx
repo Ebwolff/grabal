@@ -15,7 +15,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   AreaChart, Area, CartesianGrid, PieChart, Pie, Cell as PieCell
 } from 'recharts';
-import { getProductions, getAllCosts, ProductionRecord, CostRecord } from '@/lib/supabase/database';
+import { getProductions, getAllCosts, getSales, ProductionRecord, CostRecord, Sale } from '@/lib/supabase/database';
 
 const monthlyData: Array<{ mes: string; receita: number; custo: number }> = [];
 
@@ -26,6 +26,7 @@ export default function ConsolidationPage() {
   const { safra: filterSafra, fazenda: filterFazenda, cultura: filterCultura } = useGlobalFilter();
 
   const [productions, setProductions] = useState<ProductionRecord[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
   const [costs, setCosts] = useState<CostRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -33,11 +34,13 @@ export default function ConsolidationPage() {
     async function loadData() {
       try {
         setLoading(true);
-        const [prodsData, costsData] = await Promise.all([
+        const [prodsData, salesData, costsData] = await Promise.all([
           getProductions(),
+          getSales(),
           getAllCosts()
         ]);
         setProductions(prodsData);
+        setSales(salesData);
         setCosts(costsData);
       } catch (err) {
         console.error('Failed to load consolidation data', err);
@@ -49,7 +52,7 @@ export default function ConsolidationPage() {
   }, []);
 
   const financials = useMemo(() => {
-    // 1. Filter Productions
+    // 1. Filter Productions (para área/produtividade)
     const filteredProds = productions.filter(p => {
       const culturaInfo = p.Cultura as any;
       if (!culturaInfo) return false;
@@ -59,40 +62,52 @@ export default function ConsolidationPage() {
       return true;
     });
 
-    // 2. Group Productions by Culture
-    const cultureGroups: Record<string, { area: number; producaoTotal: number; precoVenda: number }> = {};
+    // 2. Filter Sales (para receita real)
+    const filteredSales = sales.filter(sale => {
+      const culturaInfo = sale.Cultura as any;
+      if (!culturaInfo) return false;
+      if (filterSafra && culturaInfo.Safra?.year !== filterSafra) return false;
+      if (filterFazenda && !culturaInfo.Safra?.Farm?.name?.includes(filterFazenda)) return false;
+      if (filterCultura && culturaInfo.name !== filterCultura) return false;
+      return true;
+    });
+
+    // 3. Group Productions by Culture (área e produção física)
+    const cultureGroups: Record<string, { area: number; producaoTotal: number }> = {};
     filteredProds.forEach(p => {
       const culturaName = (p.Cultura as any)?.name || 'Outros';
       if (!cultureGroups[culturaName]) {
-        cultureGroups[culturaName] = { area: 0, producaoTotal: 0, precoVenda: 0 };
+        cultureGroups[culturaName] = { area: 0, producaoTotal: 0 };
       }
       cultureGroups[culturaName].area += p.area || 0;
       cultureGroups[culturaName].producaoTotal += p.totalProduction || 0;
-      // Preço de venda (usando um mock ou estimativa, já que não temos venda real na tabela production)
-      // Vamos assumir R$ 120 por saca para soja, 60 para milho, etc. (Mock provisório)
-      let defaultPrice = 100;
-      if (culturaName.toLowerCase().includes('soja')) defaultPrice = 120;
-      if (culturaName.toLowerCase().includes('milho')) defaultPrice = 60;
-      if (culturaName.toLowerCase().includes('algodão')) defaultPrice = 200;
-      cultureGroups[culturaName].precoVenda = defaultPrice; 
+    });
+
+    // 4. Group Sales by Culture (receita real)
+    const receitaGroups: Record<string, number> = {};
+    filteredSales.forEach(sale => {
+      const culturaName = (sale.Cultura as any)?.name || 'Outros';
+      receitaGroups[culturaName] = (receitaGroups[culturaName] || 0) + (sale.grossRevenue || 0);
+      if (!cultureGroups[culturaName]) cultureGroups[culturaName] = { area: 0, producaoTotal: 0 };
     });
 
     const cultureResults = Object.entries(cultureGroups).map(([cultura, data], i) => {
-      const receitaBruta = data.producaoTotal * data.precoVenda;
+      const receitaBruta = receitaGroups[cultura] || 0;
       const produtividade = data.area > 0 ? (data.producaoTotal / data.area) : 0;
-      return { 
-        cultura, 
-        area: data.area, 
+      const precoVenda = data.producaoTotal > 0 ? receitaBruta / data.producaoTotal : 0;
+      return {
+        cultura,
+        area: data.area,
         produtividade: Number(produtividade.toFixed(1)),
         producaoTotal: data.producaoTotal,
-        precoVenda: data.precoVenda,
-        receitaBruta, 
-        color: cultureColors[i % cultureColors.length] 
+        precoVenda,
+        receitaBruta,
+        color: cultureColors[i % cultureColors.length]
       };
     }).sort((a, b) => b.receitaBruta - a.receitaBruta);
 
     const receitaBruta = cultureResults.reduce((s, c) => s + c.receitaBruta, 0);
-    const deducoes = receitaBruta * 0.05;
+    const deducoes = 0; // Sem dado real de deduções sobre a receita no schema atual
     const receitaLiquida = receitaBruta - deducoes;
 
     // 3. Filter Costs for CMV
@@ -124,11 +139,11 @@ export default function ConsolidationPage() {
     const margemLiquida = receitaLiquida > 0 ? (lucroLiquido / receitaLiquida * 100) : 0;
 
     return { cultureResults, receitaBruta, deducoes, receitaLiquida, lucroBruto, margemBruta, cmvTotal, ebitda, margemEbitda, lucroOperacional, lucroLiquido, margemLiquida, depreciation, financialExpenses, taxes };
-  }, [productions, costs, filterSafra, filterFazenda, filterCultura]);
+  }, [productions, sales, costs, filterSafra, filterFazenda, filterCultura]);
 
   const dreRows = [
     { label: 'Receita Bruta', value: financials.receitaBruta, level: 0, bold: true },
-    { label: '(-) Deduções (5%)', value: -financials.deducoes, level: 1 },
+    { label: '(-) Deduções', value: -financials.deducoes, level: 1 },
     { label: 'Receita Líquida', value: financials.receitaLiquida, level: 0, highlight: true },
     { label: '(-) CMV', value: -financials.cmvTotal, level: 1, accent: 'red' },
     { label: 'Lucro Bruto', value: financials.lucroBruto, level: 0, highlight: true },

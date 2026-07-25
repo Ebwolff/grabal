@@ -7,7 +7,7 @@ import { usePrivacy } from '@/context/PrivacyContext';
 import { cn } from '@/lib/utils';
 import {
   TrendingUp, TrendingDown, Wheat, DollarSign, BarChart3,
-  Factory, MapPin, Layers, ArrowRight
+  Factory, MapPin, Layers, ArrowRight, Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
@@ -145,7 +145,7 @@ export default function ConsolidatedPage() {
     });
 
     return { producaoTotal, receitaTotal, custosTotal, lucroTotal, margemLucro, areaTotal, porCultura, porFazenda, custosProducao, totalCustosOp };
-  }, []);
+  }, [culturasData, custosOperacionais]);
 
   const cultureChart = Object.entries(consolidated.porCultura)
     .map(([cultura, d]) => ({ name: cultura, receita: d.receita, custos: d.custos, lucro: d.lucro, color: cultureColors[cultura] }))
@@ -158,6 +158,19 @@ export default function ConsolidatedPage() {
   const fmt = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
   const fmtM = (v: number) => `R$ ${(v / 1000000).toFixed(2)}M`;
   const fmtK = (v: number) => `${(v / 1000).toFixed(0)}k`;
+
+  if (loading) {
+    return (
+      <MainContent>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="flex flex-col items-center gap-4 text-slate-400">
+            <Loader2 size={32} className="animate-spin text-primary" />
+            <p>Consolidando todas as fazendas...</p>
+          </div>
+        </div>
+      </MainContent>
+    );
+  }
 
   return (
     <MainContent>

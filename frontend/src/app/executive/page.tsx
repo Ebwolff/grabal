@@ -124,8 +124,8 @@ export default function ExecutiveDashboard() {
       custo += cTotal;
 
       // Map Categories
-      if (c.type === 'INSUMO') costCatMap['Insumos'] += cTotal;
-      else if (c.type === 'SERVICO') costCatMap['Servicos'] += cTotal;
+      if (c.type === 'INSUMOS') costCatMap['Insumos'] += cTotal;
+      else if (c.type === 'SERVICOS') costCatMap['Servicos'] += cTotal;
       else if (c.type === 'MAO_DE_OBRA') costCatMap['MaoDeObra'] += cTotal;
       else if (c.type === 'ARMAZENAGEM') costCatMap['Armazenagem'] += cTotal;
       else costCatMap['Outros'] += cTotal;
@@ -139,13 +139,18 @@ export default function ExecutiveDashboard() {
       }
     });
 
-    let ebitda = receita - custo; // Mock simplification
+    // EBITDA aproximado pela receita - custo: o schema atual não segrega depreciação/
+    // amortização nem despesas financeiras, então não há como calcular um EBITDA "puro".
+    const ebitda = receita - custo;
     let endividamento = 0;
-    
+    const credorMap: Record<string, number> = {};
+
+    // Endividamento é a nível Fazenda/Global (não há relação direta Liability -> Cultura/Safra
+    // para aplicar os filtros de cultura/safra desta página).
     liabilities.forEach(l => {
-      // Ignoramos filtros de cultura/safra aqui pois endividamento é a nível Farm/Global
-      if (filterFazenda && l.farmId !== filterFazenda) return;
       endividamento += l.value;
+      const credor = l.creditor || 'Não informado';
+      credorMap[credor] = (credorMap[credor] || 0) + l.value;
     });
 
     const monthlyData = months.map(m => ({
@@ -165,10 +170,11 @@ export default function ExecutiveDashboard() {
       name, value, color: catColors[name as keyof typeof catColors] || '#000'
     })).sort((a,b) => b.value - a.value);
 
-    const endividamentoArr = [
-      { label: 'Bancário', value: endividamento * 0.7, color: '#f59e0b' },
-      { label: 'Fornecedores', value: endividamento * 0.3, color: '#ef4444' }
-    ];
+    const debtColors = ['#f59e0b', '#ef4444', '#6366f1', '#06b6d4', '#22c55e'];
+    const endividamentoArr = Object.entries(credorMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([label, value], i) => ({ label, value, color: debtColors[i % debtColors.length] }));
 
     return { receita, custo, lucro: receita - custo, producaoTotal, ebitda, endividamentoArr, monthlyData, producaoCultura, custosCat, totalEndividamento: endividamento };
   }, [productions, costs, liabilities, sales, filterSafra, filterFazenda, filterCultura]);

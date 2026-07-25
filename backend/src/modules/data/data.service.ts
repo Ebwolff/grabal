@@ -3,7 +3,10 @@ import { PrismaService } from '../../prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { Producer, Farm, Safra, Prisma } from '@prisma/client';
 import { FinanceEngineService } from '../engine/services/finance-engine.service';
-import { RatingEngineService, Rating } from '../engine/services/rating-engine.service';
+import {
+  RatingEngineService,
+  Rating,
+} from '../engine/services/rating-engine.service';
 
 @Injectable()
 export class DataService {
@@ -15,7 +18,10 @@ export class DataService {
   ) {}
 
   // PRODUCERS
-  async createProducer(data: Prisma.ProducerCreateInput, userId: string): Promise<Producer> {
+  async createProducer(
+    data: Prisma.ProducerCreateInput,
+    userId: string,
+  ): Promise<Producer> {
     const producer = await this.prisma.extended.producer.create({ data });
     await this.audit.log({
       userId,
@@ -33,10 +39,15 @@ export class DataService {
   }
 
   // FARMS
-  async createFarm(data: Prisma.FarmCreateInput, userId: string): Promise<Farm> {
+  async createFarm(
+    data: Prisma.FarmCreateInput,
+    userId: string,
+  ): Promise<Farm> {
     const farm = await this.prisma.extended.farm.create({ data });
     // Nota: Produtor deve pertencer ao mesmo grupo econômico, garantido pelo isolamento
-    const producer = await this.prisma.producer.findUnique({ where: { id: farm.producerId } });
+    const producer = await this.prisma.producer.findUnique({
+      where: { id: farm.producerId },
+    });
     await this.audit.log({
       userId,
       action: 'CREATE',
@@ -55,9 +66,15 @@ export class DataService {
   }
 
   // SAFRAS
-  async createSafra(data: Prisma.SafraCreateInput, userId: string): Promise<Safra> {
-     const safra = await this.prisma.extended.safra.create({ data });
-     const farm = await this.prisma.farm.findUnique({ where: { id: safra.farmId }, include: { producer: true } });
+  async createSafra(
+    data: Prisma.SafraCreateInput,
+    userId: string,
+  ): Promise<Safra> {
+    const safra = await this.prisma.extended.safra.create({ data });
+    const farm = await this.prisma.farm.findUnique({
+      where: { id: safra.farmId },
+      include: { producer: true },
+    });
     await this.audit.log({
       userId,
       action: 'CREATE',
@@ -66,11 +83,14 @@ export class DataService {
       newData: safra,
       economicGroupId: farm?.producer?.economicGroupId || '',
     });
-     return safra;
+    return safra;
   }
 
   // CULTURAS
-  async createCultura(data: Prisma.CulturaCreateInput, userId: string): Promise<any> {
+  async createCultura(
+    data: Prisma.CulturaCreateInput,
+    userId: string,
+  ): Promise<any> {
     const cultura = await this.prisma.extended.cultura.create({ data });
     return cultura;
   }
@@ -79,7 +99,7 @@ export class DataService {
   async createProduction(data: any, userId: string): Promise<any> {
     // Integração com o motor de cálculos
     const totalProduction = data.area * data.productivity;
-    
+
     const production = await this.prisma.extended.production.create({
       data: {
         ...data,
@@ -97,7 +117,7 @@ export class DataService {
         productions: true,
         costs: { include: { items: true } },
         revenues: true,
-      }
+      },
     });
   }
 
@@ -128,7 +148,9 @@ export class DataService {
     return revenue;
   }
 
-  async getCulturaRating(culturaId: string): Promise<{ score: number; rating: Rating }> {
+  async getCulturaRating(
+    culturaId: string,
+  ): Promise<{ score: number; rating: Rating }> {
     const data = await this.prisma.cultura.findUnique({
       where: { id: culturaId },
       include: {
@@ -141,10 +163,17 @@ export class DataService {
     if (!data) throw new Error('Cultura não encontrada');
 
     // Cálculos simplificados para demonstração do motor
-    const totalGrossRevenue = data.revenues.reduce((acc, r) => acc + r.grossRevenue, 0);
-    const totalCost = data.costs.reduce((acc, c) => acc + c.items.reduce((sum, i) => sum + i.value, 0), 0);
+    const totalGrossRevenue = data.revenues.reduce(
+      (acc, r) => acc + r.grossRevenue,
+      0,
+    );
+    const totalCost = data.costs.reduce(
+      (acc, c) => acc + c.items.reduce((sum, i) => sum + i.value, 0),
+      0,
+    );
     const ebitda = totalGrossRevenue - totalCost;
-    const ebitdaMargin = totalGrossRevenue > 0 ? (ebitda / totalGrossRevenue) * 100 : 0;
+    const ebitdaMargin =
+      totalGrossRevenue > 0 ? (ebitda / totalGrossRevenue) * 100 : 0;
 
     // Métricas para o Rating
     return this.ratingEngine.calculateRating({
@@ -158,14 +187,31 @@ export class DataService {
   // ASSETS
   async createAsset(data: Prisma.AssetUncheckedCreateInput, userId: string) {
     const asset = await this.prisma.extended.asset.create({ data });
-    await this.logAudit(userId, 'CREATE', 'Asset', asset.id, asset, data.farmId);
+    await this.logAudit(
+      userId,
+      'CREATE',
+      'Asset',
+      asset.id,
+      asset,
+      data.farmId,
+    );
     return asset;
   }
 
   // LIABILITIES
-  async createLiability(data: Prisma.LiabilityUncheckedCreateInput, userId: string) {
+  async createLiability(
+    data: Prisma.LiabilityUncheckedCreateInput,
+    userId: string,
+  ) {
     const liability = await this.prisma.extended.liability.create({ data });
-    await this.logAudit(userId, 'CREATE', 'Liability', liability.id, liability, data.farmId);
+    await this.logAudit(
+      userId,
+      'CREATE',
+      'Liability',
+      liability.id,
+      liability,
+      data.farmId,
+    );
     return liability;
   }
 
@@ -177,9 +223,19 @@ export class DataService {
   }
 
   // GUARANTEES
-  async createGuarantee(data: Prisma.GuaranteeUncheckedCreateInput, userId: string) {
+  async createGuarantee(
+    data: Prisma.GuaranteeUncheckedCreateInput,
+    userId: string,
+  ) {
     const guarantee = await this.prisma.extended.guarantee.create({ data });
-    await this.logAudit(userId, 'CREATE', 'Guarantee', guarantee.id, guarantee, data.farmId);
+    await this.logAudit(
+      userId,
+      'CREATE',
+      'Guarantee',
+      guarantee.id,
+      guarantee,
+      data.farmId,
+    );
     return guarantee;
   }
 
@@ -201,15 +257,27 @@ export class DataService {
   }
 
   async findAllCosts() {
-    return this.prisma.extended.cost.findMany({ include: { items: true, cultura: { include: { safra: { include: { farm: true } } } } } });
+    return this.prisma.extended.cost.findMany({
+      include: {
+        items: true,
+        cultura: { include: { safra: { include: { farm: true } } } },
+      },
+    });
   }
 
-  private async logAudit(userId: string, action: string, model: string, recordId: string, newData: any, farmId: string) {
+  private async logAudit(
+    userId: string,
+    action: string,
+    model: string,
+    recordId: string,
+    newData: any,
+    farmId: string,
+  ) {
     const farm = await this.prisma.farm.findUnique({
       where: { id: farmId },
       include: { producer: true },
     });
-    
+
     await this.audit.log({
       userId,
       action,

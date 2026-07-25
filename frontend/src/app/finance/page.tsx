@@ -13,13 +13,13 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { getProductions, getAllCosts, getLiabilities, ProductionRecord, CostRecord, Liability, getAssets, Asset } from '@/lib/supabase/database';
+import { getAllCosts, getLiabilities, CostRecord, Liability, getAssets, Asset, getSales, Sale } from '@/lib/supabase/database';
 
 export default function FinancePage() {
   const { isPrivate } = usePrivacy();
   const { safra: filterSafra, fazenda: filterFazenda, cultura: filterCultura } = useGlobalFilter();
 
-  const [productions, setProductions] = useState<ProductionRecord[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
   const [costs, setCosts] = useState<CostRecord[]>([]);
   const [liabilities, setLiabilities] = useState<Liability[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -29,13 +29,13 @@ export default function FinancePage() {
     async function loadData() {
       try {
         setLoading(true);
-        const [p, c, l, a] = await Promise.all([
-          getProductions(),
+        const [s, c, l, a] = await Promise.all([
+          getSales(),
           getAllCosts(),
           getLiabilities(),
           getAssets()
         ]);
-        setProductions(p);
+        setSales(s);
         setCosts(c);
         setLiabilities(l);
         setAssets(a);
@@ -52,7 +52,7 @@ export default function FinancePage() {
     let receitaBruta = 0;
     let cmvTotal = 0;
     let despAdmin = 0;
-    let despFinan = 0;
+    const despFinan = 0;
     let totalAssets = 0;
     let totalLiabilities = 0;
 
@@ -61,8 +61,8 @@ export default function FinancePage() {
     const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
     months.forEach(m => monthMap[m] = { receita: 0, custos: 0 });
 
-    productions.forEach(p => {
-      const culturaInfo = p.Cultura as any;
+    sales.forEach(s => {
+      const culturaInfo = s.Cultura as any;
       const safraName = culturaInfo?.Safra?.year || 'Desconhecida';
       const fazendaName = culturaInfo?.Safra?.Farm?.name || 'Desconhecida';
       const culturaName = culturaInfo?.name || 'Outros';
@@ -71,17 +71,12 @@ export default function FinancePage() {
       if (filterFazenda && !fazendaName.includes(filterFazenda)) return;
       if (filterCultura && culturaName !== filterCultura) return;
 
-      let defaultPrice = 100;
-      if (culturaName.toLowerCase().includes('soja')) defaultPrice = 120;
-      if (culturaName.toLowerCase().includes('milho')) defaultPrice = 60;
-      if (culturaName.toLowerCase().includes('algodão')) defaultPrice = 200;
-
-      const rec = (p.totalProduction || 0) * defaultPrice;
+      const rec = s.grossRevenue || 0;
       receitaBruta += rec;
 
-      const distMonths = ['Jul', 'Ago', 'Set', 'Out', 'Nov'];
-      const slice = rec / distMonths.length;
-      distMonths.forEach(m => monthMap[m].receita += slice);
+      const date = new Date(s.createdAt || Date.now());
+      const mIdx = date.getMonth();
+      if (months[mIdx]) monthMap[months[mIdx]].receita += rec;
     });
 
     costs.forEach(c => {
@@ -96,20 +91,16 @@ export default function FinancePage() {
 
       const cTotal = c.items?.reduce((acc, i) => acc + (i.value || 0), 0) || 0;
 
-      if (c.type === 'INSUMO' || c.type === 'SERVICO' || c.type === 'MAO_DE_OBRA' || c.type === 'ARMAZENAGEM' || c.type === 'FRETE') {
+      if (c.type === 'INSUMOS' || c.type === 'SERVICOS' || c.type === 'MAO_DE_OBRA' || c.type === 'ARMAZENAGEM' || c.type === 'FRETE') {
         cmvTotal += cTotal;
-        if (c.type === 'INSUMO') catMap['Insumos'] += cTotal;
-        else if (c.type === 'SERVICO') catMap['Servicos'] += cTotal;
+        if (c.type === 'INSUMOS') catMap['Insumos'] += cTotal;
+        else if (c.type === 'SERVICOS') catMap['Servicos'] += cTotal;
         else if (c.type === 'MAO_DE_OBRA') catMap['MaoDeObra'] += cTotal;
         else if (c.type === 'ARMAZENAGEM') catMap['Armazenagem'] += cTotal;
         else catMap['Despesas'] += cTotal;
-      } else if (c.type === 'ADMINISTRATIVO' || c.type === 'CONSULTORIA') {
-        despAdmin += cTotal;
-        catMap['Despesas'] += cTotal;
-      } else if (c.type === 'FINANCEIRO') {
-        despFinan += cTotal;
-        catMap['Despesas'] += cTotal;
       } else {
+        // DESPESAS_ADMINISTRATIVAS, CONSULTORIAS, MANUTENCAO. Não há categoria de despesa
+        // financeira em Cost, então despFinan permanece 0 (sem dado real).
         despAdmin += cTotal;
         catMap['Despesas'] += cTotal;
       }
@@ -121,15 +112,10 @@ export default function FinancePage() {
       }
     });
 
-    liabilities.forEach(l => {
-      if (filterFazenda && l.farmId !== filterFazenda) return;
-      totalLiabilities += l.value;
-    });
-
-    assets.forEach(a => {
-      if (filterFazenda && a.farmId !== filterFazenda) return;
-      totalAssets += a.value;
-    });
+    // Ativos e passivos são a nível Fazenda/Global (não há relação direta com
+    // Cultura/Safra para aplicar os filtros desta página).
+    liabilities.forEach(l => { totalLiabilities += l.value; });
+    assets.forEach(a => { totalAssets += a.value; });
 
     const lucroBruto = receitaBruta - cmvTotal;
     const ebitda = lucroBruto - despAdmin;
@@ -137,8 +123,6 @@ export default function FinancePage() {
 
     const dreData = [
       { label: 'Receita Bruta', value: receitaBruta, pct: 100 },
-      { label: '(-) Impostos s/ Vendas', value: -(receitaBruta * 0.05), pct: -5 },
-      { label: 'Receita Líquida', value: receitaBruta * 0.95, pct: 95 },
       { label: '(-) CMV', value: -cmvTotal, pct: receitaBruta > 0 ? -Math.round((cmvTotal / receitaBruta) * 100) : 0 },
       { label: 'Lucro Bruto', value: lucroBruto, pct: receitaBruta > 0 ? Math.round((lucroBruto / receitaBruta) * 100) : 0 },
       { label: '(-) Desp. Operacionais', value: -despAdmin, pct: receitaBruta > 0 ? -Math.round((despAdmin / receitaBruta) * 100) : 0 },
@@ -170,7 +154,7 @@ export default function FinancePage() {
     };
 
     return { dreData, costBreakdown, monthlyRevenue, kpis };
-  }, [productions, costs, liabilities, assets, filterSafra, filterFazenda, filterCultura]);
+  }, [sales, costs, liabilities, assets, filterSafra, filterFazenda, filterCultura]);
 
   if (loading) {
     return (

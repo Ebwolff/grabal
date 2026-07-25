@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { PrismaClient, CostType, Role } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -15,15 +16,17 @@ async function main() {
   });
 
   // 2. Create User
+  const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD || 'admin123';
   await prisma.user.create({
     data: {
       email: 'admin@grambal.com',
-      password: 'hashed_password_placeholder', // Should be hashed in real scenario
+      password: await bcrypt.hash(seedAdminPassword, 10),
       name: 'Admin User',
       role: Role.ADMIN,
       economicGroupId: eg.id,
     },
   });
+  console.log(`Admin criado: admin@grambal.com / senha: ${seedAdminPassword}`);
 
   // 3. Create Producer
   const producer = await prisma.producer.create({

@@ -1,9 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { MainContent } from '@/components/MainContent';
 import { PageHeader } from '@/components/PageHeader';
-import { Truck, Calculator, DollarSign, Shield, Wrench, Coins } from 'lucide-react';
+import { useToast } from '@/components/ToastProvider';
+import { Truck, Calculator, Shield, Wrench, Coins, Save, Trash2, History } from 'lucide-react';
+import {
+  getCulturas,
+  getFreights,
+  createFreight,
+  deleteFreight,
+  type Cultura,
+  type Freight,
+} from '@/lib/supabase/database';
 
 interface TruckPreset {
   name: string;
@@ -20,6 +29,14 @@ const TRUCK_PRESETS: TruckPreset[] = [
 ];
 
 export default function FreightPage() {
+  const { success: toastSuccess, error: toastError } = useToast();
+
+  const [culturas, setCulturas] = useState<Cultura[]>([]);
+  const [culturaId, setCulturaId] = useState('');
+  const [history, setHistory] = useState<Freight[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+  const [saving, setSaving] = useState(false);
+
   const [distance, setDistance] = useState(140);
   const [dieselPrice, setDieselPrice] = useState(5.70);
   const [volumeTon, setVolumeTon] = useState(6480);
@@ -48,8 +65,34 @@ export default function FreightPage() {
   // Custo operacional fixo calculado de forma realista
   const calculatedFixedCost = driverSalary + insuranceIpva + (maintenanceTrip + tollTrip) * estimatedTrips;
   const totalOwnCost = totalDieselCost + calculatedFixedCost;
-  
+
   const totalThirdPartyCost = volumeTon * thirdPartyCostTon;
+
+  const fetchInitial = useCallback(async () => {
+    try {
+      const cults = await getCulturas();
+      setCulturas(cults);
+      if (cults.length > 0) setCulturaId(prev => prev || cults[0].id);
+    } catch (err: any) {
+      toastError('Erro ao carregar culturas: ' + err.message);
+    }
+  }, [toastError]);
+
+  const fetchHistory = useCallback(async (id: string) => {
+    if (!id) { setHistory([]); setLoadingHistory(false); return; }
+    try {
+      setLoadingHistory(true);
+      const freights = await getFreights(id);
+      setHistory(freights);
+    } catch (err: any) {
+      toastError('Erro ao carregar histórico de fretes: ' + err.message);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [toastError]);
+
+  useEffect(() => { fetchInitial(); }, [fetchInitial]);
+  useEffect(() => { fetchHistory(culturaId); }, [culturaId, fetchHistory]);
 
   const handlePresetChange = (index: number) => {
     setPresetIndex(index);
@@ -66,6 +109,46 @@ export default function FreightPage() {
     return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
+  const handleSave = async (tipo: 'Frota Própria' | 'Terceirizado') => {
+    if (!culturaId) {
+      toastError('Selecione uma cultura antes de salvar.');
+      return;
+    }
+    const valorTotal = tipo === 'Frota Própria' ? totalOwnCost : totalThirdPartyCost;
+    setSaving(true);
+    try {
+      await createFreight({
+        culturaId,
+        tipo,
+        condicao: tipo === 'Frota Própria'
+          ? (isCustom ? 'Customizado' : TRUCK_PRESETS[presetIndex].name)
+          : 'CIF',
+        quantidadeTon: volumeTon,
+        custoPorTon: valorTotal / volumeTon,
+        distanciaPorto: distance,
+        precoDiesel: tipo === 'Frota Própria' ? dieselPrice : null,
+        consumoEstimado: tipo === 'Frota Própria' ? consumption : null,
+        valorTotal,
+      });
+      toastSuccess('Cálculo de frete salvo com sucesso.');
+      fetchHistory(culturaId);
+    } catch (err: any) {
+      toastError('Erro ao salvar frete: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteFreight(id);
+      toastSuccess('Registro removido.');
+      setHistory(prev => prev.filter(f => f.id !== id));
+    } catch (err: any) {
+      toastError('Erro ao remover registro: ' + err.message);
+    }
+  };
+
   return (
     <MainContent>
       <PageHeader
@@ -73,10 +156,24 @@ export default function FreightPage() {
         description="Comparativo de viabilidade: Frota Própria vs Terceirizada (CIF)"
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
+      <div className="glass p-4 rounded-xl border border-industrial-border mt-6 mb-2">
+        <label className="block text-xs text-slate-400 mb-1 font-bold uppercase tracking-wider">Cultura</label>
+        <select
+          value={culturaId}
+          onChange={e => setCulturaId(e.target.value)}
+          className="w-full md:w-1/3 bg-industrial-dark border border-industrial-border rounded-lg p-2 text-white text-sm focus:outline-none focus:border-primary"
+        >
+          {culturas.length === 0 && <option value="">Nenhuma cultura cadastrada</option>}
+          {culturas.map(c => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-4">
         {/* Left Column - Inputs */}
         <div className="lg:col-span-7 space-y-6">
-          
+
           {/* Section 1: Geral */}
           <div className="glass p-6 rounded-xl border border-industrial-border">
             <h3 className="text-sm font-bold uppercase tracking-widest text-white mb-4 flex items-center gap-2 border-b border-industrial-border pb-2">
@@ -110,9 +207,9 @@ export default function FreightPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs text-slate-400 mb-1 font-bold uppercase tracking-wider">Tipo de Caminhão</label>
-                <select 
-                  value={presetIndex} 
-                  onChange={e => handlePresetChange(Number(e.target.value))} 
+                <select
+                  value={presetIndex}
+                  onChange={e => handlePresetChange(Number(e.target.value))}
                   className="w-full bg-industrial-dark border border-industrial-border rounded-lg p-2 text-white text-sm focus:outline-none focus:border-primary"
                 >
                   {TRUCK_PRESETS.map((preset, i) => (
@@ -124,26 +221,26 @@ export default function FreightPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-slate-400 mb-1 font-bold uppercase tracking-wider">Capacidade por Viagem (Ton)</label>
-                  <input 
-                    type="number" 
-                    value={capacity} 
+                  <input
+                    type="number"
+                    value={capacity}
                     onChange={e => {
                       setPresetIndex(TRUCK_PRESETS.length - 1);
                       setCustomCapacity(Number(e.target.value));
-                    }} 
+                    }}
                     className="w-full bg-industrial-dark border border-industrial-border rounded-lg p-2 text-white text-sm focus:outline-none focus:border-primary"
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1 font-bold uppercase tracking-wider">Consumo de Combustível (km/L)</label>
-                  <input 
-                    type="number" 
-                    step="0.1" 
-                    value={consumption} 
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={consumption}
                     onChange={e => {
                       setPresetIndex(TRUCK_PRESETS.length - 1);
                       setCustomConsumption(Number(e.target.value));
-                    }} 
+                    }}
                     className="w-full bg-industrial-dark border border-industrial-border rounded-lg p-2 text-white text-sm focus:outline-none focus:border-primary"
                   />
                 </div>
@@ -184,6 +281,35 @@ export default function FreightPage() {
             </div>
           </div>
 
+          {/* Section 4: Histórico */}
+          <div className="glass p-6 rounded-xl border border-industrial-border">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-white mb-4 flex items-center gap-2 border-b border-industrial-border pb-2">
+              <History className="w-4 h-4 text-primary-light" /> Histórico de Cálculos Salvos
+            </h3>
+            {loadingHistory ? (
+              <p className="text-xs text-slate-500">Carregando histórico...</p>
+            ) : history.length === 0 ? (
+              <p className="text-xs text-slate-500">Nenhum cálculo salvo para esta cultura ainda.</p>
+            ) : (
+              <div className="space-y-2">
+                {history.map(f => (
+                  <div key={f.id} className="flex items-center justify-between bg-industrial-dark/50 border border-industrial-border rounded-lg p-3 text-xs">
+                    <div>
+                      <span className="font-bold text-white">{f.tipo}</span>
+                      <span className="text-slate-500 ml-2">{f.condicao} • {f.quantidadeTon.toLocaleString('pt-BR')} Ton</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono font-bold text-primary-light">{formatCost(f.valorTotal)}</span>
+                      <button onClick={() => handleDelete(f.id)} className="text-slate-500 hover:text-rose-400 transition-colors">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
         </div>
 
         {/* Right Column - Results */}
@@ -201,8 +327,15 @@ export default function FreightPage() {
                 <span>{estimatedTrips} viagens estimadas</span>
                 <span>Diesel: {formatCost(totalDieselCost)}</span>
               </div>
+              <button
+                onClick={() => handleSave('Frota Própria')}
+                disabled={saving || !culturaId}
+                className="mt-4 w-full flex items-center justify-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider py-2 rounded-lg hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+              >
+                <Save className="w-3.5 h-3.5" /> Salvar este cálculo
+              </button>
             </div>
-            
+
             <div className="bg-industrial-dark p-6 rounded-lg border border-industrial-border relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <h4 className="text-cyan-400 text-xs font-bold uppercase tracking-wider mb-2">Custo Terceirizado (CIF)</h4>
@@ -211,6 +344,13 @@ export default function FreightPage() {
                 <span>Valor por Tonelada</span>
                 <span>R$ {thirdPartyCostTon.toFixed(2)}/t</span>
               </div>
+              <button
+                onClick={() => handleSave('Terceirizado')}
+                disabled={saving || !culturaId}
+                className="mt-4 w-full flex items-center justify-center gap-2 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-bold uppercase tracking-wider py-2 rounded-lg hover:bg-cyan-500/20 transition-colors disabled:opacity-50"
+              >
+                <Save className="w-3.5 h-3.5" /> Salvar este cálculo
+              </button>
             </div>
 
             <div className="p-5 bg-industrial-accent/10 border border-industrial-accent/20 rounded-lg flex flex-col gap-2">
@@ -219,8 +359,8 @@ export default function FreightPage() {
                 {totalThirdPartyCost > totalOwnCost ? '' : '-'} {formatCost(Math.abs(totalThirdPartyCost - totalOwnCost))}
               </span>
               <p className="text-[10px] text-slate-500 leading-relaxed mt-1">
-                {totalThirdPartyCost > totalOwnCost 
-                  ? 'A frota própria apresenta maior viabilidade financeira para este volume e distância.' 
+                {totalThirdPartyCost > totalOwnCost
+                  ? 'A frota própria apresenta maior viabilidade financeira para este volume e distância.'
                   : 'A terceirização (frete CIF) é mais vantajosa economicamente para este cenário.'
                 }
               </p>

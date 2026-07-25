@@ -15,7 +15,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Cell as PieCell
 } from 'recharts';
-import { getProductions, getAllCosts, ProductionRecord, CostRecord } from '@/lib/supabase/database';
+import { getAllCosts, getSales, CostRecord, Sale } from '@/lib/supabase/database';
 
 interface DREData {
   safra: string;
@@ -37,7 +37,7 @@ export default function DREPage() {
   const { isPrivate } = usePrivacy();
   const { safra: filterSafra, fazenda: filterFazenda, cultura: filterCultura } = useGlobalFilter();
 
-  const [productions, setProductions] = useState<ProductionRecord[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
   const [costs, setCosts] = useState<CostRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,11 +45,11 @@ export default function DREPage() {
     async function loadData() {
       try {
         setLoading(true);
-        const [prodsData, costsData] = await Promise.all([
-          getProductions(),
+        const [salesData, costsData] = await Promise.all([
+          getSales(),
           getAllCosts()
         ]);
-        setProductions(prodsData);
+        setSales(salesData);
         setCosts(costsData);
       } catch (err) {
         console.error('Failed to load dre data', err);
@@ -63,8 +63,8 @@ export default function DREPage() {
   const dreRawData = useMemo<DREData[]>(() => {
     const cultureMap: Record<string, DREData> = {};
 
-    productions.forEach(p => {
-      const culturaInfo = p.Cultura as any;
+    sales.forEach(sale => {
+      const culturaInfo = sale.Cultura as any;
       const safraName = culturaInfo?.Safra?.year || 'Desconhecida';
       const fazendaName = culturaInfo?.Safra?.Farm?.name || 'Desconhecida';
       const culturaName = culturaInfo?.name || 'Outros';
@@ -86,15 +86,7 @@ export default function DREPage() {
         };
       }
 
-      // Preço mock provisório (igual da consolidação)
-      let defaultPrice = 100;
-      if (culturaName.toLowerCase().includes('soja')) defaultPrice = 120;
-      if (culturaName.toLowerCase().includes('milho')) defaultPrice = 60;
-      if (culturaName.toLowerCase().includes('algodão')) defaultPrice = 200;
-
-      const receita = (p.totalProduction || 0) * defaultPrice;
-      cultureMap[key].receitaBruta += receita;
-      cultureMap[key].deducoes += receita * 0.05; // 5% default
+      cultureMap[key].receitaBruta += sale.grossRevenue || 0;
     });
 
     costs.forEach(c => {
@@ -121,21 +113,21 @@ export default function DREPage() {
       }
 
       const costTotal = c.items?.reduce((s, item) => s + (item.value || 0), 0) || 0;
-      
-      // Categorização baseada no tipo (por enquanto usamos cmv para producao e armazenagem, custosOp para o resto)
-      if (c.type === 'MAO_DE_OBRA' || c.type === 'ARMAZENAGEM' || c.type === 'INSUMO') {
+
+      // Categorização baseada no CostType real do schema (INSUMOS/SERVICOS/FRETE/MAO_DE_OBRA/
+      // ARMAZENAGEM/MANUTENCAO/DESPESAS_ADMINISTRATIVAS/CONSULTORIAS). Não há categoria de
+      // despesa financeira em Cost, então despesasFinanceiras permanece 0 (sem dado real).
+      if (c.type === 'MAO_DE_OBRA' || c.type === 'ARMAZENAGEM' || c.type === 'INSUMOS') {
         cultureMap[key].cmv += costTotal;
-      } else if (c.type === 'ADMINISTRATIVO') {
+      } else if (c.type === 'DESPESAS_ADMINISTRATIVAS') {
         cultureMap[key].despesasAdmin += costTotal;
-      } else if (c.type === 'FINANCEIRO') {
-        cultureMap[key].despesasFinanceiras += costTotal;
       } else {
         cultureMap[key].custosOperacionais += costTotal;
       }
     });
 
     return Object.values(cultureMap);
-  }, [productions, costs]);
+  }, [sales, costs]);
 
   const filtered = useMemo(() => {
     return dreRawData.filter(d =>

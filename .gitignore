@@ -11,3 +11,6 @@ coverage
 .DS_Store
 .vscode
 dev.db
+supabase/.temp/
+scratch_parse/
+*.xlsx

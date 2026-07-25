@@ -494,3 +494,32 @@ export async function deleteSale(id: string): Promise<void> {
   const { error } = await supabase().from('Revenue').delete().eq('id', id)
   if (error) throw error
 }
+
+// Freight
+export async function getFreights(culturaId?: string): Promise<Freight[]> {
+  let query = supabase()
+    .from('Freight')
+    .select('*, Cultura(name, safraId, Safra(year, description, farmId, Farm(name)))')
+    .order('createdAt', { ascending: false })
+  if (culturaId) query = query.eq('culturaId', culturaId)
+  const { data, error } = await query
+  if (error) throw error
+  return data || []
+}
+
+export async function createFreight(freight: Omit<Freight, 'id' | 'createdAt' | 'updatedAt' | 'Cultura'>): Promise<Freight> {
+  const { data, error } = await supabase().from('Freight').insert({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), ...freight }).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function updateFreight(id: string, freight: Partial<Omit<Freight, 'id' | 'createdAt' | 'updatedAt' | 'Cultura'>>): Promise<Freight> {
+  const { data, error } = await supabase().from('Freight').update({ updatedAt: new Date().toISOString(), ...freight }).eq('id', id).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteFreight(id: string): Promise<void> {
+  const { error } = await supabase().from('Freight').delete().eq('id', id)
+  if (error) throw error
+}

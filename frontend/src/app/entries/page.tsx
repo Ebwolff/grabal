@@ -13,12 +13,12 @@ import {
   Calendar, Info, ChevronRight, LayoutList, History, Lock, MapPin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  getProducers, getFarms, 
-  createProduction, createCostWithItems, createAsset, 
-  createLiability, createCPR, createGuarantee,
+import {
+  getProducers, getFarms,
+  createProduction, createCostWithItems, createAsset,
+  createLiability, createCPR, createGuarantee, createSale,
   getProductions, getAllCosts, getLiabilities, getCPRs,
-  type Producer, type Farm, type Safra, type Cultura 
+  type Producer, type Farm, type Safra, type Cultura
 } from '@/lib/supabase/database';
 
 // --- Types ---
@@ -86,8 +86,8 @@ function EntriesContent() {
       prods.forEach(p => acts.push({ type: 'producao', label: `Produção ${p.Cultura?.name || ''}`, val: `${p.totalProduction} sc`, date: p.createdAt, ts: new Date(p.createdAt).getTime() }));
       costs.forEach(c => {
         let t = 'custo';
-        if (c.type === 'MAO_DE_OBRA') t = 'servico'; // approximation for UI
-        if (c.type === 'DESPESA_ADM' || c.type === 'DESPESA_FINANCEIRA') t = 'despesa';
+        if (c.type === 'MAO_DE_OBRA' || c.type === 'SERVICOS') t = 'servico'; // approximation for UI
+        if (c.type === 'DESPESAS_ADMINISTRATIVAS') t = 'despesa';
         const label = c.items && c.items.length > 0 ? c.items[0].description : `Custo: ${c.type}`;
         const totalVal = c.items ? c.items.reduce((acc: number, item: any) => acc + item.value, 0) : 0;
         acts.push({ type: t, label: label, val: `R$ ${totalVal.toLocaleString('pt-BR')}`, date: c.createdAt, ts: new Date(c.createdAt).getTime() });
@@ -237,8 +237,7 @@ function EntriesContent() {
           await createProduction(payload);
           break;
         case 'venda':
-          // @ts-ignore
-          await (await import('@/lib/supabase/database')).createSale(payload);
+          await createSale(payload);
           break;
         case 'despesa':
         case 'custo':
